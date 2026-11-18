@@ -1,0 +1,29 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Endereço que o app abre. Passe no build: gradle assembleDebug -PappUrl=https://seu-dominio.com.br/tv/
+def appUrl = (project.findProperty('appUrl') ?: 'http://192.168.0.10:3000/tv/').toString().replace('"', '')
+
+android {
+    namespace 'com.acciolyplay.tv'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.acciolyplay.tv'
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+        buildConfigField 'String', 'APP_URL', "\"${appUrl}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
