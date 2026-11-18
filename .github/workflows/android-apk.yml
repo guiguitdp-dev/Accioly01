@@ -4,6 +4,10 @@
 name: Gerar APK Android TV
 
 on:
+  push:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-apk.yml'
   workflow_dispatch:
     inputs:
       app_url:
@@ -29,7 +33,7 @@ jobs:
       - name: Compilar APK
         working-directory: android
         env:
-          APP_URL: ${{ inputs.app_url }}
+          APP_URL: ${{ inputs.app_url || 'http://192.168.0.10:3000/tv/' }}
         run: gradle --no-daemon assembleDebug -PappUrl="$APP_URL"
       - name: Renomear
         run: cp android/app/build/outputs/apk/debug/app-debug.apk AcciolyPlay-AndroidTV.apk
