@@ -135,7 +135,9 @@
 
   function restart() {
     var id = run.def.id, cb = run.onExit;
-    start(id, cb);
+    var go = function () { start(id, cb); };
+    // Gancho para anúncio entre partidas (só para quem não assina — ver js/ads.js)
+    if (window.Ads && Ads.on) Ads.interstitial('next', go); else go();
   }
 
   function gameOver(finalScore, title) {

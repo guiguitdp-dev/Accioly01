@@ -25,6 +25,7 @@ const { hashPassword, checkPassword, makeTokens, id, code } = require('./lib/aut
 const { buildPix } = require('./lib/pix');
 const health = require('./lib/health');
 const mercadopago = require('./lib/mercadopago');
+const media = require('./lib/media');
 
 const ROOT = path.resolve(__dirname, '..');
 const APP_DIR = path.join(ROOT, 'app');
@@ -55,7 +56,12 @@ function seed() {
       supportWhatsapp: '',
       announcement: '',
       heroTitle: '', heroText: '',
-      publicUrl: ''
+      publicUrl: '',
+      // Música e vídeos (YouTube Data API v3 — chave grátis do Google Cloud)
+      youtubeApiKey: '',
+      // Anúncios (Google AdSense — jogos HTML5 e banner). Só para quem NÃO assina.
+      adsEnabled: false, adsensePublisherId: '', adsenseBannerSlot: '', adsTestMode: true, adFrequency: 120,
+      adsAudience: 'expirados', adsInAndroid: false
     },
     users: [], orders: [], admins: [],
     catalog: loadDefaultCatalog(),
@@ -88,6 +94,8 @@ if (!D.admins.length) {
 
 // ---------------- regras de negócio ----------------
 function settings() { return D.settings; }
+function ytKey() { return process.env.YOUTUBE_API_KEY || D.settings.youtubeApiKey || ''; }
+const MEDIA_MOCK = !!process.env.MEDIA_MOCK;
 function mpToken() { return process.env.MP_ACCESS_TOKEN || D.settings.mpAccessToken || ''; }
 function founders() { return D.users.filter((u) => u.founder).length; }
 function promoRemaining() { return Math.max(0, Number(D.settings.promoSlots) - founders()); }
@@ -117,7 +125,12 @@ function publicSettings() {
     productName: s.productName, trialDays: s.trialDays, promoPrice: s.promoPrice, regularPrice: s.regularPrice, promoSlots: s.promoSlots,
     promoRemaining: promoRemaining(), planDays: s.planDays, freeChannels: s.freeChannels, referralBonusDays: s.referralBonusDays,
     pixEnabled: !!s.pixKey, mpEnabled: !!mpToken(), supportWhatsapp: s.supportWhatsapp, announcement: s.announcement,
-    heroTitle: s.heroTitle, heroText: s.heroText
+    heroTitle: s.heroTitle, heroText: s.heroText,
+    youtubeEnabled: !!ytKey() || MEDIA_MOCK,
+    ads: {
+      enabled: !!(s.adsEnabled && /^ca-pub-\d{10,20}$/.test(s.adsensePublisherId || '')), client: s.adsensePublisherId, slot: s.adsenseBannerSlot,
+      test: !!s.adsTestMode, frequency: Number(s.adFrequency) || 120, audience: s.adsAudience, android: !!s.adsInAndroid
+    }
   };
 }
 
@@ -378,7 +391,7 @@ route('POST', '/api/events', (req, res, body) => {
   if (limited(req, 'ev', 300, 600e3)) return send(res, 200, { ok: true });
   const type = String(body.type || '').slice(0, 12).replace(/[^a-z]/g, '');
   const itemId = String(body.id || '').slice(0, 80).replace(/[^\w\-.:/@]/g, '');
-  if (['play', 'game', 'open', 'score'].includes(type) && itemId) {
+  if (['play', 'game', 'open', 'score', 'ad', 'yt', 'music'].includes(type) && itemId) {
     if (type !== 'score') { bump(type + ':' + itemId, 1); db.save(); }
   }
   send(res, 200, { ok: true });
@@ -395,6 +408,36 @@ route('GET', '/api/yt/resolve', async (req, res, body, params, query) => {
     if (r.channelId) { D.yt[handle] = { channelId: r.channelId, live: r.live, at: Date.now(), liveAt: Date.now() }; db.save(); }
     send(res, 200, { channelId: r.channelId || (cached && cached.channelId) || null, live: r.live });
   } catch (e) { send(res, 200, { channelId: cached ? cached.channelId : null, live: cached ? cached.live : false }); }
+});
+
+// ---------------- Música e vídeos ----------------
+route('GET', '/api/media/home', async (req, res) => {
+  const out = { youtube: !!ytKey() || MEDIA_MOCK, music: [], videos: [], free: [], errors: {} };
+  if (MEDIA_MOCK) { out.music = media.mock('m', 8); out.videos = media.mock('v', 8); out.free = media.mock('a', 8); return send(res, 200, out); }
+  const key = ytKey();
+  await Promise.all([
+    key ? media.ytChart(key, 'music').then((r) => { out.music = r; }).catch((e) => { out.errors.music = e.message; }) : null,
+    key ? media.ytChart(key, 'videos').then((r) => { out.videos = r; }).catch((e) => { out.errors.videos = e.message; }) : null,
+    media.audiusTrending().then((r) => { out.free = r; }).catch((e) => { out.errors.free = e.message; })
+  ]);
+  send(res, 200, out);
+});
+
+route('GET', '/api/media/search', async (req, res, body, params, query) => {
+  if (!auth(req, 'user')) return fail(res, 401, 'Entre na sua conta para buscar.');
+  if (limited(req, 'msearch', 40, 600e3)) return fail(res, 429, 'Muitas buscas seguidas. Aguarde alguns minutos.');
+  const q = String(query.get('q') || '').trim().slice(0, 80);
+  const kind = query.get('tipo') === 'videos' ? 'videos' : 'music';
+  const out = { youtube: [], free: [], errors: {} };
+  if (q.length < 2) return send(res, 200, out);
+  if (MEDIA_MOCK) { out.youtube = media.mock('s', 6); out.free = media.mock('f', 4); return send(res, 200, out); }
+  bump('busca', 1); db.save();
+  const key = ytKey();
+  await Promise.all([
+    key ? media.ytSearch(key, q, kind).then((r) => { out.youtube = r; }).catch((e) => { out.errors.youtube = e.message; }) : null,
+    media.audiusSearch(q).then((r) => { out.free = r; }).catch((e) => { out.errors.free = e.message; })
+  ]);
+  send(res, 200, out);
 });
 
 // ---------------- Painel do Dono ----------------
@@ -447,6 +490,8 @@ route('GET', '/api/admin/stats', (req, res) => {
     users: D.users.length, status: st, founders: founders(), promoSlots: D.settings.promoSlots, promoRemaining: promoRemaining(),
     revenue, revenueMonth, mrr, buyers, conversion: D.users.length ? buyers / D.users.length : 0,
     pendingOrders: D.orders.filter((o) => o.status === 'aguardando_confirmacao').length,
+    ads7d: Object.entries(D.stats.daily).filter(([d]) => now - Date.parse(d) < 7 * DAY).reduce((n, [, v]) => n + (v.ad || 0), 0),
+    adsOn: publicSettings().ads.enabled,
     days, topChannels: top('play'), topGames: top('game'), health: { checkedAt: D.health.checkedAt, broken: Object.values(D.health.results).filter((r) => !r.ok).length, total: Object.keys(D.health.results).length }
   });
 });
@@ -549,7 +594,8 @@ route('POST', '/api/admin/orders/:id', (req, res, body, params) => {
 
 const SETTING_TYPES = {
   productName: 'str', trialDays: 'num', promoPrice: 'num', regularPrice: 'num', promoSlots: 'num', planDays: 'num', freeChannels: 'bool', referralBonusDays: 'num',
-  pixKey: 'str', pixKeyType: 'str', pixName: 'str', pixCity: 'str', mpAccessToken: 'secret', supportWhatsapp: 'str', announcement: 'str', heroTitle: 'str', heroText: 'str', publicUrl: 'str'
+  pixKey: 'str', pixKeyType: 'str', pixName: 'str', pixCity: 'str', mpAccessToken: 'secret', supportWhatsapp: 'str', announcement: 'str', heroTitle: 'str', heroText: 'str', publicUrl: 'str',
+  youtubeApiKey: 'secret', adsEnabled: 'bool', adsensePublisherId: 'str', adsenseBannerSlot: 'str', adsTestMode: 'bool', adFrequency: 'num', adsAudience: 'str', adsInAndroid: 'bool'
 };
 
 route('GET', '/api/admin/settings', (req, res) => {
@@ -557,6 +603,8 @@ route('GET', '/api/admin/settings', (req, res) => {
   const s = Object.assign({}, D.settings);
   s.mpAccessToken = s.mpAccessToken ? '••••' + s.mpAccessToken.slice(-4) : '';
   s.mpFromEnv = !!process.env.MP_ACCESS_TOKEN;
+  s.youtubeApiKey = s.youtubeApiKey ? '••••' + s.youtubeApiKey.slice(-4) : '';
+  s.ytFromEnv = !!process.env.YOUTUBE_API_KEY;
   send(res, 200, { settings: s });
 });
 
@@ -676,7 +724,7 @@ route('GET', '/api/admin/report', (req, res) => {
   const broken = Object.entries(D.health.results).filter(([, r]) => !r.ok).map(([k, r]) => k + ' (' + r.note + ')');
   send(res, 200, {
     geradoEm: new Date().toISOString(), clientes: D.users.length, status: st, fundadores: founders() + '/' + D.settings.promoSlots,
-    ultimos7dias: { cadastros: sum('cadastro'), vendas: sum('venda'), canaisAbertos: sum('play'), jogosAbertos: sum('game') },
+    ultimos7dias: { cadastros: sum('cadastro'), vendas: sum('venda'), canaisAbertos: sum('play'), jogosAbertos: sum('game'), buscasMusica: sum('busca'), anuncios: sum('ad') },
     conversao: D.users.length ? (new Set(D.orders.filter((o) => o.status === 'pago').map((o) => o.userId)).size / D.users.length).toFixed(3) : '0',
     canaisComProblema: broken,
     topCanais: Object.entries(D.stats.counters).filter(([k]) => k.startsWith('play:')).sort((a, b) => b[1] - a[1]).slice(0, 5),
@@ -733,6 +781,12 @@ const server = http.createServer(async (req, res) => {
   if (p.startsWith('/tv/')) return serveStatic(res, APP_DIR, p.slice(4) || 'index.html');
   if (p.startsWith('/admin/')) return serveStatic(res, ADMIN_DIR, p.slice(7) || 'index.html');
   if (p === '/health') return send(res, 200, { ok: true });
+  // ads.txt exigido pelo Google AdSense (gerado a partir do Painel do Dono)
+  if (p === '/ads.txt') {
+    const m = /^ca-pub-(\d+)$/.exec(D.settings.adsensePublisherId || '');
+    return send(res, m ? 200 : 404, m ? 'google.com, pub-' + m[1] + ', DIRECT, f08c47fec0942fa0\n' : '');
+  }
+  if (p === '/privacidade' || p === '/privacidade/') return serveStatic(res, SITE_DIR, 'privacidade.html');
   return serveStatic(res, SITE_DIR, p === '/' ? 'index.html' : p.slice(1));
 });
 

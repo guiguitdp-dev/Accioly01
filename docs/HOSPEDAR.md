@@ -52,6 +52,7 @@ E um serviço do systemd (ou `pm2`) para manter o servidor ligado.
 | `DATA_DIR` | Pasta do banco de dados e backups |
 | `ADMIN_EMAIL` + `ADMIN_PASSWORD` | Cria o dono automaticamente no primeiro start |
 | `MP_ACCESS_TOKEN` | Token do Mercado Pago (alternativa a salvar no painel) |
+| `YOUTUBE_API_KEY` | Chave da YouTube Data API v3 (alternativa a salvar no painel) |
 
 ## Backup
 

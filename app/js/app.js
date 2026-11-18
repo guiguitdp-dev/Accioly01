@@ -96,7 +96,7 @@
     else if (u && u.status === 'trial') pill = '<span class="pill trial">Teste grátis: ' + daysLeft(u.trialEndsAt) + ' dia(s)</span>';
     else if (u && u.status === 'active') pill = '<span class="pill active">Assinante até ' + fmtDate(u.paidUntil) + '</span>';
     else if (u) pill = '<span class="pill expired">Teste encerrado</span>';
-    var tabs = [['inicio', 'Início'], ['tv', 'TV ao Vivo'], ['filmes', 'Filmes e Séries'], ['jogos', 'Jogos'], ['kids', 'Kids 🧸'], ['conta', 'Minha Conta']];
+    var tabs = [['inicio', 'Início'], ['tv', 'TV ao Vivo'], ['filmes', 'Filmes'], ['midia', '🎵 Música'], ['jogos', 'Jogos'], ['kids', 'Kids 🧸'], ['conta', 'Conta']];
     return '<header class="topbar"><div class="brand">' + brandHtml() + '</div><nav class="tabs" data-row="tabs">' +
       tabs.map(function (t) { return '<button class="tab focusable' + (S.tab === t[0] ? ' active' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') +
       '</nav><div class="spacer"></div><span class="clock" id="clock">' + clockText() + '</span>' + pill + '</header>';
@@ -187,6 +187,7 @@
       var r = lsGet('ap_recent', []).map(itemById).filter(Boolean);
       html += row('recent', 'Continuar assistindo', r);
       html += row('alta', '🔥 Em alta agora', trendingItems());
+      html += Ads.banner();
       html += row('abertos', catName('abertos'), catItems('abertos'));
       html += row('jogos', '🎮 Jogos no controle remoto', games());
       cats.forEach(function (c) { if (c.id !== 'abertos') html += row(c.id, c.name, catItems(c.id)); });
@@ -197,6 +198,8 @@
       html += row('educacao', '📚 Aprender brincando', catItems('educacao'));
     } else if (S.tab === 'tv') {
       cats.forEach(function (c) { if (c.id !== 'filmes') html += row(c.id, c.name, catItems(c.id)); });
+    } else if (S.tab === 'midia') {
+      html += mediaTabHtml();
     } else if (S.tab === 'filmes') {
       html += row('filmes', catName('filmes'), catItems('filmes'));
       html += '<p class="note" style="margin:0 var(--safe)">Esses serviços são gratuitos e legais. Ao abrir, você vai para o app/site oficial.</p>';
@@ -210,11 +213,78 @@
     root.innerHTML = html;
     root.scrollTop = 0;
     bindRoot();
+    Ads.fillBanners(root);
+    if (S.tab === 'midia') loadMedia();
     var first = root.querySelector('.tab.active');
     var target = (S.lastFocusSel && root.querySelector(S.lastFocusSel)) || root.querySelector('.hero .btn') || root.querySelector('.tile') || first;
     S.lastFocusSel = null;
     Input.focus(target);
   }
+
+  // ---------------- Música e Vídeos ----------------
+  function mediaTile(it, rowId) {
+    return '<button class="tile media focusable" style="--c:#1f2937;' + (it.thumb ? 'background-image:url(' + esc(it.thumb) + ')' : '') + '" data-id="' + esc(it.id) + '" data-rowid="' + esc(rowId) + '">' +
+      (it.kind === 'yt' ? (it.live ? '<span class="badge live">● AO VIVO</span>' : '<span class="badge app">▶ YOUTUBE</span>') : '<span class="badge free">SEM ANÚNCIOS</span>') +
+      '<span class="name">' + esc(it.title) + '</span><span class="sub">' + esc(it.channel || '') + (it.duration && it.duration !== 'AO VIVO' ? ' · ' + esc(it.duration) : '') + '</span></button>';
+  }
+  function mediaRow(id, title, items, kind) {
+    if (!items || !items.length) return '';
+    items.forEach(function (x) { x.kind = kind; });
+    rowsIndex[id] = items;
+    return '<section class="row"><h2>' + esc(title) + '</h2><div class="track" data-row="' + esc(id) + '">' + items.map(function (it) { return mediaTile(it, id); }).join('') + '</div></section>';
+  }
+  function mediaTabHtml() {
+    var tipo = S.mediaTipo || 'music';
+    return '<form class="searchbar" id="msf" data-row="busca" autocomplete="off">' +
+      '<input class="focusable" id="mq" name="q" type="search" placeholder="Buscar música, artista ou vídeo…" value="' + esc(S.mediaQuery || '') + '">' +
+      '<button class="btn ghost focusable" type="button" data-act="mtipo">' + (tipo === 'music' ? '🎵 Músicas' : '🎬 Vídeos') + '</button>' +
+      '<button class="btn primary focusable" type="submit">Buscar</button></form>' +
+      '<div id="mrows"><div class="spinner"></div></div>';
+  }
+  function loadMedia() {
+    var box = root.querySelector('#mrows');
+    var f = root.querySelector('#msf');
+    if (f) f.addEventListener('submit', function (e) { e.preventDefault(); searchMedia(root.querySelector('#mq').value); });
+    if (LOCAL || !S.online) { box.innerHTML = '<p class="note" style="margin:0 var(--safe)">Música e vídeos funcionam com o servidor ligado (na versão do pendrive, abra o YouTube pelo app oficial).</p>'; return; }
+    var fresh = S.mediaHome && Date.now() - S.mediaHome.at < 600000;
+    (fresh ? Promise.resolve(S.mediaHome.data) : api('GET', '/api/media/home')).then(function (d) {
+      if (!fresh) S.mediaHome = { at: Date.now(), data: d };
+      if (S.tab !== 'midia' || !root.querySelector('#mrows')) return;
+      drawMedia(d);
+    }).catch(function () { box.innerHTML = '<p class="note" style="margin:0 var(--safe)">Não foi possível carregar agora. Tente de novo em instantes.</p>'; });
+  }
+  function drawMedia(home) {
+    var box = root.querySelector('#mrows'), r = S.mediaResults, html = '';
+    if (r) {
+      html += mediaRow('mres', '🔎 "' + S.mediaQuery + '" no YouTube', r.youtube, 'yt');
+      html += mediaRow('mfres', '🎧 "' + S.mediaQuery + '" — Música livre (sem anúncios)', r.free, 'audio');
+      if (!r.youtube.length && !r.free.length) html += '<p class="note" style="margin:0 var(--safe) 1.4rem">Nada encontrado para "' + esc(S.mediaQuery) + '".</p>';
+    }
+    if (!home.youtube) html += '<div class="banner">A busca do YouTube ainda não foi ativada pelo dono (Painel do Dono → Configurações → YouTube).</div>';
+    html += mediaRow('mmusic', '🎵 Músicas em alta no Brasil', home.music, 'yt');
+    html += mediaRow('mvideos', '🔥 Vídeos em alta no Brasil', home.videos, 'yt');
+    html += mediaRow('mfree', '🎧 Música livre em alta — sem anúncios', home.free, 'audio');
+    html += '<p class="note" style="margin:0 var(--safe) 2rem">Vídeos tocam no player oficial do YouTube. "Música livre" são faixas liberadas pelos próprios artistas (Audius), sem anúncios.</p>';
+    box.innerHTML = html;
+    box.querySelectorAll('.tile').forEach(function (b) { b.addEventListener('click', function () { openItem(b.getAttribute('data-id'), b.getAttribute('data-rowid')); }); });
+  }
+  function searchMedia(q) {
+    q = String(q || '').trim();
+    if (q.length < 2) return toast('Digite pelo menos 2 letras');
+    S.mediaQuery = q;
+    var box = root.querySelector('#mrows');
+    box.innerHTML = '<div class="spinner"></div>';
+    api('GET', '/api/media/search?q=' + encodeURIComponent(q) + '&tipo=' + (S.mediaTipo === 'videos' ? 'videos' : 'music')).then(function (r) {
+      S.mediaResults = r;
+      drawMedia((S.mediaHome && S.mediaHome.data) || { youtube: true, music: [], videos: [], free: [] });
+      var first = root.querySelector('#mrows .tile');
+      if (first) Input.focus(first);
+    }).catch(function (e) { box.innerHTML = '<p class="err" style="margin:0 var(--safe)">' + esc(e.message) + '</p>'; });
+  }
+
+  // Desbloqueio de jogo premium por anúncio recompensado (30 min)
+  function unlocked(id) { var u = lsGet('ap_unlocks', {}); return u[id] && u[id] > Date.now(); }
+  function unlock(id) { var u = lsGet('ap_unlocks', {}); u[id] = Date.now() + 30 * 60000; lsSet('ap_unlocks', u); }
 
   function accountHtml() {
     var u = S.user, st = S.settings;
@@ -343,8 +413,9 @@
   }
 
   // ---------------- assinatura ----------------
-  function openPaywall(reason) {
+  function openPaywall(reason, game) {
     if (LOCAL) return;
+    S.rewardGame = game || null;
     if (!S.user) { renderAuth('register'); return; }
     var st = S.settings, promo = st.promoRemaining > 0 || S.user.founder;
     var price = promo ? st.promoPrice : st.regularPrice;
@@ -355,8 +426,10 @@
       '<div id="paybox"><div class="inline" data-row="pay">' +
         (st.pixEnabled ? '<button class="btn primary focusable" data-act="pix">Pagar com Pix</button>' : '') +
         (st.mpEnabled ? '<button class="btn ghost focusable" data-act="mp">Cartão ou Pix (Mercado Pago)</button>' : '') +
+        (game && Ads.rewardedAvailable() ? '<button class="btn hot focusable" data-act="reward">🎬 Ver 1 anúncio e jogar 30 min</button>' : '') +
         (st.supportWhatsapp ? '<button class="btn ghost focusable" data-act="support">💬 Falar no WhatsApp</button>' : '') +
         '<button class="btn ghost focusable" data-act="close">Agora não</button></div>' +
+        '<p class="note">Assinantes: todos os jogos liberados e <b>sem anúncios</b>.</p>' +
         (!st.pixEnabled && !st.mpEnabled ? '<p class="note">Pagamento ainda não configurado pelo dono. Fale com o suporte.</p>' : '') +
       '</div>');
   }
@@ -406,8 +479,9 @@
   }
 
   function refreshMe() {
-    return api('GET', '/api/me').then(function (r) { S.user = r.user; S.settings = Object.assign({}, S.settings, r.settings || {}); });
+    return api('GET', '/api/me').then(function (r) { S.user = r.user; S.settings = Object.assign({}, S.settings, r.settings || {}); setupAds(); });
   }
+  function setupAds() { Ads.setup(S.settings.ads, S.user, LOCAL); }
 
   // ---------------- ações ----------------
   function bindAct(el) {
@@ -431,6 +505,13 @@
     if (act === 'close') return closeModal();
     if (act === 'paywall') return openPaywall();
     if (act === 'pix') return checkout('pix');
+    if (act === 'mtipo') { S.mediaTipo = S.mediaTipo === 'videos' ? 'music' : 'videos'; el.textContent = S.mediaTipo === 'videos' ? '🎬 Vídeos' : '🎵 Músicas'; return; }
+    if (act === 'reward') {
+      var g = S.rewardGame;
+      return Ads.rewarded('premium-' + (g && g.id), function () {
+        unlock(g.id); closeModal(); toast('🎉 Liberado por 30 minutos!'); startGame(g, 'jogos');
+      }, function () { toast('Nenhum anúncio disponível agora. Tente mais tarde ou assine.'); });
+    }
     if (act === 'mp') return checkout('mp');
     if (act === 'openlink') return openExternal(el.getAttribute('data-url'), el.getAttribute('data-pkg'));
     if (act === 'support') return openExternal('https://wa.me/' + String(S.settings.supportWhatsapp).replace(/\D/g, '') + '?text=' + encodeURIComponent('Olá! Preciso de ajuda com o ' + S.settings.productName + '.'));
@@ -461,10 +542,12 @@
     if (!it) return;
     var acc = access();
     if (it.kind === 'game') {
-      if (it.premium && !acc.premium) return openPaywall(S.user && S.user.status === 'expired' ? 'Seu teste terminou. Assine para continuar jogando os jogos premium.' : '"' + it.name + '" é um jogo premium.');
-      pushRecent(it.id);
-      var back = '.tile[data-id="' + it.id + '"][data-rowid="' + rowId + '"]';
-      return GameHub.start(it.id, function () { S.lastFocusSel = back; renderHome(); });
+      if (it.premium && !acc.premium && !unlocked(it.id)) return openPaywall(S.user && S.user.status === 'expired' ? 'Seu teste terminou. Assine para continuar jogando os jogos premium.' : '"' + it.name + '" é um jogo premium.', it);
+      return startGame(it, rowId);
+    }
+    if (it.kind === 'yt' || it.kind === 'audio') {
+      if (!acc.tv) return openPaywall('Seu teste terminou. Assine para continuar.');
+      return MediaPlayer.open(list.length ? list : [it], Math.max(0, list.indexOf(it)));
     }
     if (!acc.tv) return openPaywall('Seu teste terminou. Assine para continuar assistindo.');
     pushRecent(it.id);
@@ -472,6 +555,14 @@
     var playable = list.filter(function (x) { return x.kind !== 'game' && x.type !== 'link'; });
     if (playable.indexOf(it) < 0) playable = [it];
     Player.open(playable, playable.indexOf(it));
+  }
+
+  function startGame(it, rowId) {
+    pushRecent(it.id);
+    var back = '.tile[data-id="' + it.id + '"][data-rowid="' + rowId + '"]';
+    var go = function () { GameHub.start(it.id, function () { S.lastFocusSel = back; renderHome(); }); };
+    // Quem não assina vê um anúncio antes de jogar (o Google controla a frequência)
+    if (Ads.on) Ads.interstitial('start', go); else go();
   }
 
   // Devolve { channelId, live }. O servidor confere se o canal está ao vivo agora (cache de 10 min).
@@ -484,7 +575,7 @@
   }
 
   function back() {
-    if (Player.isOpen() || GameHub.isOpen()) return true;
+    if (Player.isOpen() || GameHub.isOpen() || MediaPlayer.isOpen()) return true;
     if (S.modalOpen) { closeModal(); return true; }
     if (root.querySelector('#authf')) { renderWelcome(); return true; }
     if (S.tab !== 'inicio' && root.querySelector('.topbar')) { S.tab = 'inicio'; renderHome(); return true; }
@@ -493,7 +584,7 @@
 
   // Ações globais (prioridade mais baixa: player e jogos interceptam antes)
   Input.on(function (a) {
-    if (Player.isOpen() || GameHub.isOpen()) return false;
+    if (Player.isOpen() || GameHub.isOpen() || MediaPlayer.isOpen()) return false;
     var scope = S.modalOpen ? overlay : root;
     if (a === 'up' || a === 'down' || a === 'left' || a === 'right') { Input.move(a, scope); return true; }
     if (a === 'ok') {
@@ -523,6 +614,7 @@
     if (cfg.catalog && cfg.catalog.items) S.catalog = cfg.catalog;
     S.gameOverrides = cfg.games || {};
     S.trending = cfg.trending || [];
+    setupAds();
     document.title = S.settings.productName;
   }
 

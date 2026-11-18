@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Política de Privacidade</title>
+  <link rel="icon" href="/tv/icon.svg" type="image/svg+xml">
+  <style>
+    body { margin: 0; background: #07070c; color: #e9e9f2; font: 17px/1.6 "Segoe UI", Roboto, Arial, sans-serif; }
+    main { max-width: 820px; margin: 0 auto; padding: 32px 20px 60px; }
+    h1 { font-size: 32px; margin: 0 0 6px; } h2 { font-size: 21px; margin: 28px 0 8px; }
+    a { color: #ff9a6e; } .muted { color: #a3a3b8; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Política de Privacidade — <span class="pn">Accioly Play</span></h1>
+  <p class="muted">Última atualização: novembro de 2026</p>
+
+  <h2>1. Quais dados coletamos</h2>
+  <p>Ao criar sua conta: nome, e-mail, WhatsApp e senha (guardada de forma criptografada). Ao usar o app: contagens de uso sem identificação pessoal (quais canais e jogos são mais abertos, buscas de música feitas). Pagamentos são processados pelo Pix do seu banco ou pelo Mercado Pago; não guardamos dados de cartão.</p>
+
+  <h2>2. Para que usamos</h2>
+  <p>Para liberar seu acesso (teste grátis e assinatura), dar suporte pelo WhatsApp, avisar sobre o fim do teste ou renovação, e melhorar o app. Não vendemos seus dados.</p>
+
+  <h2>3. YouTube</h2>
+  <p>A área "Música e Vídeos" usa os <b>Serviços de API do YouTube</b>. Ao usá-la, você concorda com os <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener">Termos de Serviço do YouTube</a>. O tratamento de dados pelo Google segue a <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Política de Privacidade do Google</a>. Os vídeos tocam no player oficial do YouTube, que pode exibir anúncios do próprio YouTube. Você pode revogar acessos do Google em <a href="https://security.google.com/settings/security/permissions" target="_blank" rel="noopener">security.google.com/settings/security/permissions</a> (o app não pede login no Google).</p>
+
+  <h2>4. Anúncios e cookies</h2>
+  <p>Usuários que não assinam podem ver anúncios do <b>Google AdSense</b>. O Google e seus parceiros usam cookies para exibir anúncios com base em visitas anteriores a este e a outros sites. Saiba mais e ajuste suas preferências em <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener">policies.google.com/technologies/ads</a> e <a href="https://adssettings.google.com" target="_blank" rel="noopener">adssettings.google.com</a>. Assinantes não veem esses anúncios.</p>
+
+  <h2>5. Música livre</h2>
+  <p>A seção "Música livre" toca faixas disponibilizadas pelos próprios artistas na plataforma Audius, direto dos servidores dela.</p>
+
+  <h2>6. Seus direitos (LGPD)</h2>
+  <p>Você pode pedir a qualquer momento acesso, correção ou exclusão dos seus dados, e cancelar o recebimento de mensagens. Basta falar com a gente pelo contato abaixo.</p>
+
+  <h2>7. Contato</h2>
+  <p>WhatsApp: <span id="wa">pelo app, em Minha Conta → Suporte</span></p>
+
+  <p><a href="/">← Voltar</a></p>
+</main>
+<script>
+  fetch('/api/public/config').then(function (r) { return r.json(); }).then(function (c) {
+    var s = c.settings || {};
+    document.querySelectorAll('.pn').forEach(function (e) { e.textContent = s.productName || 'Accioly Play'; });
+    if (s.supportWhatsapp) document.getElementById('wa').textContent = s.supportWhatsapp;
+  }).catch(function () {});
+</script>
+</body>
+</html>

@@ -84,6 +84,7 @@
           card('Receita do mês', money(s.revenueMonth), 'total: ' + money(s.revenue)) +
           card('Receita recorrente', money(s.mrr), 'estimada por mês') +
           card('Conversão', (s.conversion * 100).toFixed(1) + '%', 'teste → compra') +
+          card('Anúncios (7 dias)', s.adsOn ? s.ads7d : 'desligado', s.adsOn ? 'pedidos ao Google · receita no painel do AdSense' : 'ative em Configurações') +
         '</div>' +
         '<div class="grid2"><div class="box"><h2>🔥 Promoção de fundador</h2><div style="font-size:28px;font-weight:800">' + s.founders + ' / ' + s.promoSlots + '</div>' +
           '<div class="meter"><i style="width:' + foundersPct + '%"></i></div><div class="hint">' + (s.promoRemaining > 0 ? 'Restam ' + s.promoRemaining + ' vagas no preço promocional. Use isso nas divulgações: é escassez real.' : 'Promoção encerrada — novos clientes pagam o preço normal.') + '</div></div>' +
@@ -244,6 +245,19 @@
           '<label class="f"><span>Tipo da chave</span><select name="pixKeyType">' + [['cpf', 'CPF'], ['cnpj', 'CNPJ'], ['email', 'E-mail'], ['telefone', 'Celular'], ['aleatoria', 'Chave aleatória']].map(function (t) { return '<option value="' + t[0] + '"' + (s.pixKeyType === t[0] ? ' selected' : '') + '>' + t[1] + '</option>'; }).join('') + '</select></label>' +
           f('pixName', 'Nome do recebedor (como no banco)') + f('pixCity', 'Cidade do recebedor') + '<div class="hint">O cliente paga pelo QR Code e clica "Já paguei". Você confere no banco e aprova em "Ações do dia".</div></div>' +
         '<div class="box"><h2>Mercado Pago (automático)</h2>' + (r.settings.mpFromEnv ? '<p class="hint">Token definido pela variável MP_ACCESS_TOKEN no servidor.</p>' : f('mpAccessToken', 'Access Token de produção', 'password', 'Mercado Pago > Seu negócio > Configurações > Credenciais. Libera cartão e Pix com confirmação automática (cobra taxa do MP).')) + '</div></div>' +
+        '<div class="grid2"><div class="box"><h2>🎵 Música e Vídeos (YouTube)</h2>' +
+          (r.settings.ytFromEnv ? '<p class="hint">Chave definida pela variável YOUTUBE_API_KEY no servidor.</p>' : f('youtubeApiKey', 'Chave da API do YouTube (YouTube Data API v3)', 'password',
+            'Grátis: console.cloud.google.com → criar projeto → "APIs e serviços" → ativar "YouTube Data API v3" → Credenciais → Criar chave de API. Cota grátis: 10.000 unidades/dia (≈ 90 buscas + "em alta" ilimitado graças ao cache).')) +
+          '<div class="hint">Os vídeos tocam no player oficial do YouTube, com os anúncios do próprio YouTube (é proibido bloquear). A "Música livre" (Audius) funciona sem chave e não tem anúncios.</div></div>' +
+        '<div class="box"><h2>💰 Anúncios que pagam você (Google AdSense)</h2>' +
+          '<label class="f"><span>Mostrar anúncios</span><select name="adsEnabled"><option value="false"' + (!s.adsEnabled ? ' selected' : '') + '>Desligado</option><option value="true"' + (s.adsEnabled ? ' selected' : '') + '>Ligado</option></select></label>' +
+          f('adsensePublisherId', 'ID de editor do AdSense', 'text', 'Formato ca-pub-1234567890123456 (AdSense → Conta → Informações da conta). O arquivo ads.txt é gerado sozinho em /ads.txt.') +
+          f('adsenseBannerSlot', 'ID do bloco de anúncio do banner (opcional)', 'text', 'AdSense → Anúncios → Por bloco de anúncios → Display → copie o data-ad-slot.') +
+          '<label class="f"><span>Quem vê anúncios</span><select name="adsAudience"><option value="expirados"' + (s.adsAudience !== 'nao_assinantes' ? ' selected' : '') + '>Só quem terminou o teste e não assinou (recomendado)</option><option value="nao_assinantes"' + (s.adsAudience === 'nao_assinantes' ? ' selected' : '') + '>Todos que não assinam (inclui teste grátis)</option></select></label>' +
+          '<label class="f"><span>Modo de teste (anúncios de exemplo)</span><select name="adsTestMode"><option value="true"' + (s.adsTestMode ? ' selected' : '') + '>Ligado — use até o AdSense aprovar</option><option value="false"' + (!s.adsTestMode ? ' selected' : '') + '>Desligado — anúncios reais (geram dinheiro)</option></select></label>' +
+          f('adFrequency', 'Intervalo mínimo entre anúncios (segundos)', 'number', '', ' min="30" step="10"') +
+          '<label class="f"><span>Anúncios no app Android</span><select name="adsInAndroid"><option value="false"' + (!s.adsInAndroid ? ' selected' : '') + '>Desligado (recomendado até integrar o AdMob)</option><option value="true"' + (s.adsInAndroid ? ' selected' : '') + '>Ligado</option></select></label>' +
+          '<div class="hint">Aparecem só entre partidas, no "ver 1 anúncio e jogar 30 min" e num banner na tela inicial — nunca em cima de vídeos ou canais. Assinantes não veem anúncios. Política de privacidade exigida pelo Google: <a href="/privacidade" target="_blank">/privacidade</a>.</div></div></div>' +
         '<button class="btn p" type="submit">Salvar configurações</button></form>';
       document.getElementById('cf').addEventListener('submit', function (e) {
         e.preventDefault();
