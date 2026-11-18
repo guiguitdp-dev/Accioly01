@@ -14,6 +14,7 @@ const os = require('os');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'accioly-teste-'));
 process.env.DATA_DIR = tmp;
 process.env.NO_HEALTH = '1';
+process.env.MEDIA_MOCK = '1'; // dados de exemplo para Música e Vídeos (sem internet)
 const shots = process.env.SHOTS || '';
 if (shots) fs.mkdirSync(shots, { recursive: true });
 
@@ -25,6 +26,9 @@ try { ({ chromium } = require('playwright')); } catch (e) {
 
 const { server, getSetupCode } = require('../server/server.js');
 const results = [];
+// Erros de scripts de terceiros (AdSense/YouTube com IDs de teste) não contam: só os do nosso código
+const THIRD = /googlesyndication|doubleclick|googleads|google\.com|gstatic|googleapis|youtube|ytimg/;
+function own(e) { return !THIRD.test(String((e && e.stack) || '')); }
 function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); console.log((cond ? '  ✔ ' : '  ✘ ') + name + (extra && !cond ? ' — ' + extra : '')); }
 
 (async () => {
@@ -34,8 +38,10 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
   const errors = [];
   try {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    // Teste sem internet: bloqueia scripts externos (AdSense, YouTube) para o resultado ser sempre o mesmo
+    await ctx.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (route) => route.abort());
     const page = await ctx.newPage();
-    page.on('pageerror', (e) => errors.push(e.message));
+    page.on('pageerror', (e) => { if (own(e)) errors.push(e.message); });
     const shot = async (n) => { if (shots) await page.screenshot({ path: path.join(shots, n + '.png') }); };
 
     console.log('App da TV (modo cliente):');
@@ -93,12 +99,37 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
     await page.waitForSelector('#player', { state: 'detached' });
     ok('VOLTAR fecha o player', true);
 
+    console.log('Música e Vídeos:');
+    await page.click('.tab[data-tab=midia]');
+    await page.waitForSelector('#mrows .tile');
+    ok('aba Música e Vídeos mostra músicas em alta', (await page.locator('#mrows .tile').count()) >= 20);
+    await page.fill('#mq', 'samba');
+    await page.press('#mq', 'Enter');
+    await page.waitForSelector('[data-row=mres] .tile');
+    ok('busca mostra resultados do YouTube e de música livre', (await page.locator('[data-row=mfres] .tile').count()) > 0);
+    await shot('07-musica');
+    await page.locator('[data-row=mfree] .tile').first().focus();
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('#mediaplayer .audioview');
+    ok('música livre abre o player de áudio', true);
+    const antes = await page.textContent('#msub');
+    await page.keyboard.press('ArrowDown');
+    ok('▼ pula para a próxima música', antes !== await page.textContent('#msub'));
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('#mediaplayer', { state: 'detached' });
+    await page.locator('[data-row=mmusic] .tile').first().focus();
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('#mediaplayer');
+    ok('vídeo do YouTube abre o player oficial', await page.isVisible('text=Player oficial do YouTube'));
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('#mediaplayer', { state: 'detached' });
+
     await page.click('.tab[data-tab=conta]');
     ok('Minha Conta mostra código de indicação', await page.isVisible('text=Seu código'));
 
     console.log('Painel do Dono:');
     const adm = await ctx.newPage();
-    adm.on('pageerror', (e) => errors.push('admin: ' + e.message));
+    adm.on('pageerror', (e) => { if (own(e)) errors.push('admin: ' + e.message); });
     await adm.goto(base + '/admin/');
     await adm.waitForSelector('input[name=code]');
     await adm.fill('input[name=code]', getSetupCode());
@@ -117,6 +148,27 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
     await adm.click('nav button[data-t=clientes]');
     await adm.waitForSelector('text=Cliente Teste');
     ok('cliente cadastrado aparece no painel', true);
+
+    console.log('Anúncios (AdSense):');
+    await adm.click('nav button[data-t=config]');
+    await adm.waitForSelector('select[name=adsEnabled]');
+    await adm.selectOption('select[name=adsEnabled]', 'true');
+    await adm.fill('input[name=adsensePublisherId]', 'ca-pub-1234567890123456');
+    await adm.fill('input[name=adsenseBannerSlot]', '1234567890');
+    await adm.selectOption('select[name=adsAudience]', 'nao_assinantes');
+    await adm.click('#cf button[type=submit]');
+    await adm.waitForSelector('text=Configurações salvas');
+    const adsTxt = await (await fetch(base + '/ads.txt')).text();
+    ok('ads.txt gerado automaticamente', adsTxt.indexOf('pub-1234567890123456, DIRECT') > 0, adsTxt);
+    ok('página de privacidade existe', (await fetch(base + '/privacidade')).status === 200);
+    await page.reload();
+    await page.waitForSelector('.topbar');
+    ok('quem não assina vê o banner de anúncio', (await page.locator('.adbox').count()) === 1);
+    await page.locator('.tile[data-id=cobrinha]').first().focus();
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('.game-screen canvas', { timeout: 3000 });
+    ok('sem AdSense carregado, o jogo abre na hora', true);
+    await page.evaluate(() => GameHub.stop());
 
     console.log('Pagamento Pix ponta a ponta:');
     await adm.click('nav button[data-t=config]');
@@ -145,10 +197,12 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
     await adm.waitForSelector('text=Nada pendente agora');
     await page.waitForSelector('.pill.active', { timeout: 15000 });
     ok('após aprovação, cliente vira assinante sem recarregar', await page.isVisible('text=Assinante até'));
+    await page.click('.tab[data-tab=inicio]');
+    ok('assinante não vê anúncios', (await page.locator('.adbox').count()) === 0);
 
     console.log('Pendrive (modo dono, file://):');
     const pd = await ctx.newPage();
-    pd.on('pageerror', (e) => errors.push('pendrive: ' + e.message));
+    pd.on('pageerror', (e) => { if (own(e)) errors.push('pendrive: ' + e.message); });
     await pd.goto('file://' + path.resolve(__dirname, '..', 'app', 'index.html'));
     await pd.waitForSelector('.topbar');
     ok('abre direto do pendrive em Modo Dono', await pd.isVisible('text=Modo Dono'));
