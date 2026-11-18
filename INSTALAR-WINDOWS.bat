@@ -27,6 +27,10 @@ echo [1/3] Node.js OK
 echo [2/3] Montando a pasta do pendrive (dist\pendrive\AcciolyPlay)...
 call node scripts\build-pendrive.js
 echo.
+echo Criando os atalhos na Area de Trabalho...
+call CRIAR-ATALHO.bat <nul >nul
+echo        Atalhos "Accioly Play" e "Accioly Play - Painel do Dono" criados na Area de Trabalho.
+echo.
 echo [3/3] Ligando o servidor. O Painel do Dono vai abrir no navegador.
 echo        Se o Windows perguntar sobre o Firewall, clique em PERMITIR (para a TV conseguir acessar).
 echo        Para desligar, feche esta janela.
