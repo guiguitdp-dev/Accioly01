@@ -27,6 +27,7 @@ public class MainActivity extends Activity {
     private WebView web;
     private String base;
     private SharedPreferences prefs;
+    private AdMobBridge ads;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -64,6 +65,7 @@ public class MainActivity extends Activity {
                 }
             }
         });
+        ads = new AdMobBridge(this, web);
         web.addJavascriptInterface(new Bridge(), "AndroidTV");
         web.setFocusable(true);
         web.setFocusableInTouchMode(true);
@@ -169,6 +171,32 @@ public class MainActivity extends Activity {
                 base = u;
                 web.loadUrl(u);
             });
+        }
+
+        // ---- Anúncios AdMob (usados por js/ads.js) ----
+        @JavascriptInterface
+        public void adsInit(final String interstitialUnit, final String rewardedUnit) {
+            runOnUiThread(() -> ads.start(interstitialUnit, rewardedUnit));
+        }
+
+        @JavascriptInterface
+        public boolean interstitialReady() {
+            return ads.interstitialReady();
+        }
+
+        @JavascriptInterface
+        public boolean rewardedReady() {
+            return ads.rewardedReady();
+        }
+
+        @JavascriptInterface
+        public void showInterstitial(final String callbackId) {
+            runOnUiThread(() -> ads.showInterstitial(callbackId));
+        }
+
+        @JavascriptInterface
+        public void showRewarded(final String callbackId) {
+            runOnUiThread(() -> ads.showRewarded(callbackId));
         }
 
         @JavascriptInterface
