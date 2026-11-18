@@ -122,14 +122,27 @@ function publicSettings() {
 }
 
 function publicCatalog() {
+  const hr = (D.health && D.health.results) || {};
   return {
     categories: D.catalog.categories,
     items: D.catalog.items.filter((i) => i.enabled !== false).map((i) => {
       const out = Object.assign({}, i);
       if (i.type === 'youtube' && !i.channelId && D.yt[i.handle] && D.yt[i.handle].channelId) out.channelId = D.yt[i.handle].channelId;
+      if (i.type === 'youtube' && D.yt[i.handle]) out.live = !!D.yt[i.handle].live;
+      // Sinal fora do ar na última verificação (só para o que toca dentro do app)
+      const h = hr[i.id];
+      if (h && !h.ok && i.type !== 'link' && Date.now() - (h.at || 0) < DAY) out.status = 'off';
       return out;
     })
   };
+}
+
+// O que mais estão assistindo/jogando (só contagens, sem dados pessoais)
+function trending() {
+  return Object.entries(D.stats.counters)
+    .filter(([k]) => k.startsWith('play:') || k.startsWith('game:'))
+    .sort((a, b) => b[1] - a[1]).slice(0, 12)
+    .map(([k, n]) => ({ id: k.slice(k.indexOf(':') + 1), n }));
 }
 
 function bump(key, n) {
@@ -246,7 +259,7 @@ function route(method, pattern, handler) {
 }
 
 route('GET', '/api/public/config', (req, res) => {
-  send(res, 200, { settings: publicSettings(), catalog: publicCatalog(), games: D.games });
+  send(res, 200, { settings: publicSettings(), catalog: publicCatalog(), games: D.games, trending: trending() });
 });
 
 route('POST', '/api/auth/register', async (req, res, body) => {
@@ -371,16 +384,17 @@ route('POST', '/api/events', (req, res, body) => {
   send(res, 200, { ok: true });
 });
 
+// Descobre o ID do canal oficial e se está AO VIVO agora (ID guardado 7 dias; "ao vivo" 10 minutos)
 route('GET', '/api/yt/resolve', async (req, res, body, params, query) => {
   const handle = String(query.get('handle') || '');
   const cached = D.yt[handle];
-  if (cached && Date.now() - cached.at < 7 * DAY) return send(res, 200, { channelId: cached.channelId, live: cached.live });
-  if (limited(req, 'yt', 60, 600e3)) return fail(res, 429, 'Aguarde');
+  if (cached && Date.now() - cached.at < 7 * DAY && Date.now() - (cached.liveAt || cached.at) < 600e3) return send(res, 200, { channelId: cached.channelId, live: cached.live });
+  if (limited(req, 'yt', 120, 600e3)) return send(res, 200, { channelId: cached ? cached.channelId : null, live: cached ? cached.live : false });
   try {
     const r = await health.resolveYoutube(handle);
-    if (r.channelId) { D.yt[handle] = { channelId: r.channelId, live: r.live, at: Date.now() }; db.save(); }
-    send(res, 200, { channelId: r.channelId, live: r.live });
-  } catch (e) { send(res, 200, { channelId: null }); }
+    if (r.channelId) { D.yt[handle] = { channelId: r.channelId, live: r.live, at: Date.now(), liveAt: Date.now() }; db.save(); }
+    send(res, 200, { channelId: r.channelId || (cached && cached.channelId) || null, live: r.live });
+  } catch (e) { send(res, 200, { channelId: cached ? cached.channelId : null, live: cached ? cached.live : false }); }
 });
 
 // ---------------- Painel do Dono ----------------
@@ -680,7 +694,7 @@ async function runHealth() {
     D.health = { checkedAt: Date.now(), results };
     for (const it of D.catalog.items) {
       const r = results[it.id];
-      if (it.type === 'youtube' && r && r.channelId) D.yt[it.handle] = { channelId: r.channelId, live: !!r.live, at: Date.now() };
+      if (it.type === 'youtube' && r && r.channelId) D.yt[it.handle] = { channelId: r.channelId, live: !!r.live, at: Date.now(), liveAt: Date.now() };
     }
     db.save();
     const bad = Object.values(results).filter((r) => !r.ok).length;

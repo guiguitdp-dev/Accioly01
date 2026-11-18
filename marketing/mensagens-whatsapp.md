@@ -22,7 +22,7 @@ Se tiver TV Box ou Android TV, te mando o app pra instalar pelo pendrive. Depois
 📺🎮 Sua TV mais divertida!
 ✅ TV aberta e notícias 24h ao vivo
 ✅ Filmes, novelas e desenhos grátis organizados
-✅ 8 jogos pra jogar com o controle da TV
+✅ 13 jogos pra jogar com o controle da TV
 💸 Preço de fundador: R$ 15,99/mês — restam [X] vagas
 Teste grátis: [LINK]
 ```

@@ -11,9 +11,9 @@ on:
   workflow_dispatch:
     inputs:
       app_url:
-        description: 'Endereço do app (ex.: https://seudominio.com.br/tv/ ou http://192.168.0.10:3000/tv/)'
-        required: true
-        default: 'http://192.168.0.10:3000/tv/'
+        description: 'Endereço fixo do app (ex.: https://seudominio.com.br/tv/). Deixe vazio para o app perguntar na 1ª abertura.'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -33,7 +33,7 @@ jobs:
       - name: Compilar APK
         working-directory: android
         env:
-          APP_URL: ${{ inputs.app_url || 'http://192.168.0.10:3000/tv/' }}
+          APP_URL: ${{ inputs.app_url || '' }}
         run: gradle --no-daemon assembleDebug -PappUrl="$APP_URL"
       - name: Renomear
         run: cp android/app/build/outputs/apk/debug/app-debug.apk AcciolyPlay-AndroidTV.apk

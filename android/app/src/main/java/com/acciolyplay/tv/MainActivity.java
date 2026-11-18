@@ -2,6 +2,7 @@ package com.acciolyplay.tv;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
@@ -25,12 +26,16 @@ public class MainActivity extends Activity {
 
     private WebView web;
     private String base;
+    private SharedPreferences prefs;
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        prefs = getSharedPreferences("accioly", MODE_PRIVATE);
+        // Endereço fixo (APK para clientes) ou o que o dono digitou na primeira abertura
         base = BuildConfig.APP_URL;
+        if (base == null || base.isEmpty()) base = prefs.getString("server", "");
 
         web = new WebView(this);
         web.setBackgroundColor(Color.rgb(7, 7, 12));
@@ -54,7 +59,7 @@ public class MainActivity extends Activity {
 
             @Override
             public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-                if (failingUrl != null && failingUrl.startsWith(base)) {
+                if (failingUrl != null && !base.isEmpty() && failingUrl.startsWith(base)) {
                     view.loadData(offlinePage(), "text/html; charset=utf-8", "UTF-8");
                 }
             }
@@ -67,7 +72,34 @@ public class MainActivity extends Activity {
         web.requestFocus();
 
         if (state != null) web.restoreState(state);
+        else if (base.isEmpty()) showSetup();
         else web.loadUrl(base);
+    }
+
+    /** Tela de primeira abertura: pede o endereço do servidor (aparece na janela do servidor no PC). */
+    private void showSetup() {
+        String last = prefs.getString("server", "");
+        String html = "<html><head><meta name='viewport' content='width=device-width,initial-scale=1'></head>"
+                + "<body style='margin:0;background:#07070c;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh'>"
+                + "<div style='max-width:760px;padding:24px'><h1 style='margin:0 0 8px'>Accioly Play</h1>"
+                + "<p style='color:#bbb;font-size:20px'>Digite o endereço do servidor. Ele aparece na janela do servidor no seu computador, na linha <b>\"Na TV (mesma rede Wi-Fi)\"</b>.</p>"
+                + "<input id='u' type='url' value='" + (last.isEmpty() ? "http://192.168." : last) + "' style='width:100%;font-size:28px;padding:14px;border-radius:12px;border:2px solid #555;background:#111;color:#fff'>"
+                + "<p><button id='b' style='font-size:26px;padding:14px 30px;border-radius:12px;border:0;background:#7c5cff;color:#fff'>Salvar e abrir</button></p>"
+                + "<p style='color:#888'>Exemplo: http://192.168.0.15:3000/tv/</p></div>"
+                + "<script>var u=document.getElementById('u');u.focus();"
+                + "document.getElementById('b').onclick=function(){AndroidTV.setServer(u.value)};"
+                + "u.onkeydown=function(e){if(e.keyCode==13||e.keyCode==40){document.getElementById('b').focus();e.preventDefault();}};</script></body></html>";
+        web.loadDataWithBaseURL("https://accioly.setup/", html, "text/html", "UTF-8", null);
+    }
+
+    private static String normalize(String url) {
+        String u = url == null ? "" : url.trim();
+        if (u.isEmpty()) return "";
+        if (!u.startsWith("http://") && !u.startsWith("https://")) u = "http://" + u;
+        Uri p = Uri.parse(u);
+        String path = p.getPath() == null ? "" : p.getPath();
+        if (path.isEmpty() || path.equals("/")) u = u.replaceAll("/+$", "") + "/tv/";
+        return u;
     }
 
     private boolean sameSite(String url) {
@@ -82,7 +114,9 @@ public class MainActivity extends Activity {
     private String offlinePage() {
         return "<html><body style='background:#07070c;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center'>"
                 + "<div><h1>Sem conexão</h1><p>Verifique a internet da TV.</p>"
-                + "<button autofocus onclick=\"location.href='" + base + "'\" style='font-size:24px;padding:14px 28px;border-radius:12px;border:0'>Tentar de novo</button></div></body></html>";
+                + "<button autofocus onclick=\"location.href='" + base + "'\" style='font-size:24px;padding:14px 28px;border-radius:12px;border:0'>Tentar de novo</button> "
+                + "<button onclick='AndroidTV.resetServer()' style='font-size:24px;padding:14px 28px;border-radius:12px;border:0'>Trocar servidor</button>"
+                + "<p style='color:#888'>" + base + "</p></div></body></html>";
     }
 
     void openExternal(String url) {
@@ -125,16 +159,30 @@ public class MainActivity extends Activity {
         public void openApp(final String pkg, final String url) {
             runOnUiThread(() -> MainActivity.this.openApp(pkg, url));
         }
+
+        @JavascriptInterface
+        public void setServer(final String url) {
+            runOnUiThread(() -> {
+                String u = normalize(url);
+                if (u.isEmpty()) return;
+                prefs.edit().putString("server", u).apply();
+                base = u;
+                web.loadUrl(u);
+            });
+        }
+
+        @JavascriptInterface
+        public void resetServer() {
+            runOnUiThread(MainActivity.this::showSetup);
+        }
     }
 
     @Override
     public void onBackPressed() {
         // Pergunta ao app web se ele trata o VOLTAR (fechar player, jogo, menu...)
+        if (base.isEmpty()) { finish(); return; }
         web.evaluateJavascript("(window.__tvBack && window.__tvBack()) ? 'sim' : 'nao'", value -> {
-            if (!"\"sim\"".equals(value)) {
-                if (web.canGoBack()) web.goBack();
-                else finish();
-            }
+            if (!"\"sim\"".equals(value)) finish(); // o app web é de página única
         });
     }
 

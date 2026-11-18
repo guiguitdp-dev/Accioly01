@@ -160,6 +160,8 @@
       else if (a === 'left' || a === 'right' || a === 'up' || a === 'down') Input.move(a, run.el.querySelector('#gmenu'));
       return true;
     }
+    // O jogo pode tratar o VOLTAR (ex.: cancelar uma seleção) antes de pausar
+    if (a === 'back' && run.game.back && run.game.back()) return true;
     if (a === 'back' || (a === 'start' && !run.def.usesStart)) { pause(); return true; }
     if (run.game.action) run.game.action(a, src);
     return true;

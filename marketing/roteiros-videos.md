@@ -14,6 +14,10 @@ Regras: grave a **TV de verdade** (celular na horizontal ou vertical mostrando a
 | 8 | "Restam [X] vagas no preço de fundador" | Tela de assinatura com contador real | "Garanta a sua — link na bio" |
 | 9 | "Criança entediada? Resolvido." | Criança jogando Memória Brasil | "3 dias grátis" |
 | 10 | "Notícia ao vivo 24h na TV sem pagar TV a cabo" | Fileira Notícias → abre um canal ao vivo | "Teste grátis" |
+| 11 | "A capivara mais tranquila do Brasil virou atleta" | Corre Capivara com pulo duplo pegando laranjas | "Bate meu recorde? Teste grátis" |
+| 12 | "Pênalti decisivo: você bate ou defende?" | Disputa de Pênaltis, defesa no último segundo | "Desafie a família — link na bio" |
+| 13 | "Acertei a palavra em 2 tentativas 😎" | Palavra Secreta resolvida, teclado na tela | "Consegue em menos? Teste grátis" |
+| 14 | "Mais viciante que joguinho de celular, só que na TV" | Blocos Encaixe limpando 2 linhas | "3 dias grátis" |
 
 Dicas:
 - Áudio em alta + legenda grande (muita gente vê sem som).

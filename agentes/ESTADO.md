@@ -3,13 +3,13 @@
 Atualizado em: 2026-11-18
 
 ## Produto
-- v1.0: app da TV, 8 jogos, painel do dono, Pix manual + Mercado Pago, indicação, APK Android TV, pendrive.
+- v1.1: 13 jogos (5 novos em alta), fileira Em alta, aba Kids, status de canal, vídeos recentes no YouTube, APK universal, instaladores de 1 clique.
 
 ## Canais
 - 37 itens no catálogo (HLS oficiais, YouTube oficiais e links de apps gratuitos). Primeira verificação real deve rodar no servidor do dono (no Brasil).
 
 ## Qualidade
-- Teste automático: 25/25 passando (inclui pagamento Pix ponta a ponta). CI do GitHub verde.
+- Teste automático: 38/38 passando (Pix ponta a ponta + todos os 13 jogos com controle aleatório).
 - APK Android TV compila no GitHub Actions (artefato "AcciolyPlay-AndroidTV").
 
 ## Números

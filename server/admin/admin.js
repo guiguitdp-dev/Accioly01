@@ -173,7 +173,8 @@
   }
 
   // ---------------- Canais e Jogos ----------------
-  var GAMES = [['cobrinha', 'Cobrinha Neon', false], ['quebrablocos', 'Quebra-Blocos', true], ['pingpong', 'Pingue-Pongue 2P', true], ['meteoros', 'Chuva de Meteoros', true], ['memoria', 'Memória Brasil', false], ['quiz', 'Quiz Brasil', true], ['velha', 'Jogo da Velha', false], ['corrida', 'Corrida Neon', true]];
+  var GAMES = [['cobrinha', 'Cobrinha Neon', false], ['quebrablocos', 'Quebra-Blocos', true], ['pingpong', 'Pingue-Pongue 2P', true], ['meteoros', 'Chuva de Meteoros', true], ['memoria', 'Memória Brasil', false], ['quiz', 'Quiz Brasil', true], ['velha', 'Jogo da Velha', false], ['corrida', 'Corrida Neon', true],
+    ['frutas', 'Festa das Frutas', true], ['blocos', 'Blocos Encaixe', false], ['penaltis', 'Disputa de Pênaltis', true], ['palavra', 'Palavra Secreta', true], ['capivara', 'Corre Capivara', false]];
   function canais(m) {
     api('GET', '/api/admin/catalog').then(function (r) {
       var items = r.catalog.items, cats = r.catalog.categories, hr = (r.health && r.health.results) || {}, games = r.games || {};

@@ -146,3 +146,14 @@ a { color: var(--accent2); }
   .grid { grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); }
   .panel, .modal { padding: 1.4rem; }
 }
+
+/* ---------- Acabamentos v1.1 ---------- */
+.clock { font-weight: 700; font-size: 1.15rem; color: var(--muted); font-variant-numeric: tabular-nums; margin-right: .4rem; }
+.tile .sub { position: relative; z-index: 1; font-size: .82rem; font-weight: 700; color: #f1f1f8; opacity: .9; margin-top: .25rem; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
+.tile.off { filter: grayscale(.85); opacity: .55; }
+.tile.off:focus { opacity: .85; }
+.tile .badge.off { background: #475569; color: #e2e8f0; }
+.splash { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.4rem; }
+.splash .brand { font-size: 3rem; }
+@media (prefers-reduced-motion: reduce) { .tile, .btn, #toast { transition: none; } .spinner { animation-duration: 2.5s; } }
+.tile, .row .btn, .hero .btn { scroll-margin-top: 7rem; scroll-margin-bottom: 2rem; }

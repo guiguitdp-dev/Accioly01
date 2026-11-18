@@ -154,6 +154,21 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
     ok('abre direto do pendrive em Modo Dono', await pd.isVisible('text=Modo Dono'));
     ok('jogo premium liberado no Modo Dono', (await pd.locator('.tile[data-id=quiz] .lock').count()) === 0);
 
+    console.log('Todos os jogos (controle remoto aleatório):');
+    const ids = await pd.evaluate(() => GameHub.list().map((g) => g.id));
+    const keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'];
+    for (const id of ids) {
+      const before = errors.length;
+      await pd.evaluate((gid) => GameHub.start(gid, function () {}), id);
+      await pd.waitForSelector('.game-screen canvas');
+      for (let i = 0; i < 45; i++) { await pd.keyboard.press(keys[(i * 7 + id.length) % keys.length]); await pd.waitForTimeout(40); }
+      await pd.waitForTimeout(400);
+      if (shots) await pd.screenshot({ path: path.join(shots, 'jogo-' + id + '.png') });
+      const alive = await pd.evaluate(() => GameHub.isOpen());
+      await pd.evaluate(() => GameHub.stop());
+      ok('jogo ' + id + ' roda sem erro', alive && errors.length === before, errors.slice(before).join(' | '));
+    }
+
     ok('sem erros de JavaScript', errors.length === 0, errors.join(' | '));
   } finally {
     await browser.close();

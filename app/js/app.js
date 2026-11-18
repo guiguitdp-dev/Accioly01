@@ -68,7 +68,7 @@
   function games() {
     return GameHub.list().map(function (g) {
       var o = S.gameOverrides[g.id] || {};
-      return { id: g.id, name: g.name, emoji: g.emoji, color: g.color, desc: g.desc, help: g.help,
+      return { id: g.id, name: g.name, emoji: g.emoji, color: g.color, desc: g.desc, help: g.help, trending: !!g.trending,
         premium: o.premium != null ? o.premium : !!g.premium, enabled: o.enabled !== false, kind: 'game' };
     }).filter(function (g) { return g.enabled; });
   }
@@ -96,10 +96,10 @@
     else if (u && u.status === 'trial') pill = '<span class="pill trial">Teste grátis: ' + daysLeft(u.trialEndsAt) + ' dia(s)</span>';
     else if (u && u.status === 'active') pill = '<span class="pill active">Assinante até ' + fmtDate(u.paidUntil) + '</span>';
     else if (u) pill = '<span class="pill expired">Teste encerrado</span>';
-    var tabs = [['inicio', 'Início'], ['tv', 'TV ao Vivo'], ['filmes', 'Filmes e Séries'], ['jogos', 'Jogos'], ['conta', 'Minha Conta']];
+    var tabs = [['inicio', 'Início'], ['tv', 'TV ao Vivo'], ['filmes', 'Filmes e Séries'], ['jogos', 'Jogos'], ['kids', 'Kids 🧸'], ['conta', 'Minha Conta']];
     return '<header class="topbar"><div class="brand">' + brandHtml() + '</div><nav class="tabs" data-row="tabs">' +
       tabs.map(function (t) { return '<button class="tab focusable' + (S.tab === t[0] ? ' active' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') +
-      '</nav><div class="spacer"></div>' + pill + '</header>';
+      '</nav><div class="spacer"></div><span class="clock" id="clock">' + clockText() + '</span>' + pill + '</header>';
   }
 
   function brandHtml() {
@@ -109,19 +109,28 @@
     return esc(parts.slice(0, -1).join(' ')) + ' <b>' + esc(parts[parts.length - 1]) + '</b>';
   }
 
+  function clockText() { var d = new Date(); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  setInterval(function () { var c = document.getElementById('clock'); if (c) c.textContent = clockText(); }, 15000);
+
   function tile(it, rowId) {
-    var badge, lock = false, acc = access();
+    var badge, lock = false, acc = access(), sub = '', off = it.status === 'off';
     if (it.kind === 'game') {
       badge = it.premium ? '<span class="badge premium">PREMIUM</span>' : '<span class="badge free">GRÁTIS</span>';
       lock = it.premium && !acc.premium;
+      var best = GameHub.best(it.id);
+      sub = best ? '🏆 Recorde ' + best : (it.trending ? '🔥 Em alta' : '');
     } else {
-      badge = it.type === 'link' ? '<span class="badge app">APP OFICIAL</span>' : '<span class="badge live">● AO VIVO</span>';
+      if (off) badge = '<span class="badge off">FORA DO AR</span>';
+      else if (it.type === 'link') badge = '<span class="badge app">APP OFICIAL</span>';
+      else if (it.type === 'youtube' && it.live === false) badge = '<span class="badge app">▶ VÍDEOS</span>';
+      else badge = '<span class="badge live">● AO VIVO</span>';
       lock = !acc.tv;
     }
-    return '<button class="tile focusable" style="--c:' + esc(it.color || '#334') + '" data-id="' + esc(it.id) + '" data-rowid="' + esc(rowId) + '">' +
+    return '<button class="tile focusable' + (off ? ' off' : '') + '" style="--c:' + esc(it.color || '#334') + '" data-id="' + esc(it.id) + '" data-rowid="' + esc(rowId) + '">' +
       badge + (isFav(it.id) ? '<span class="fav">★</span>' : '') +
       (it.emoji ? '<span class="emoji">' + it.emoji + '</span>' : '') +
-      '<span class="name">' + esc(it.name) + '</span>' + (lock ? '<span class="lock">🔒</span>' : '') + '</button>';
+      '<span class="name">' + esc(it.name) + '</span>' + (sub ? '<span class="sub">' + esc(sub) + '</span>' : '') +
+      (lock ? '<span class="lock">🔒</span>' : '') + '</button>';
   }
 
   var rowsIndex = {}; // rowId -> lista de itens (para trocar de canal com ▲▼)
@@ -132,12 +141,29 @@
       items.map(function (it) { return tile(it, id); }).join('') + '</div></section>';
   }
 
-  function catItems(cat) { return S.catalog.items.filter(function (i) { return i.cat === cat && i.enabled !== false; }); }
+  // Canais fora do ar vão para o fim da fileira
+  function catItems(cat) {
+    return S.catalog.items.filter(function (i) { return i.cat === cat && i.enabled !== false; })
+      .map(function (it, k) { return { it: it, k: k }; })
+      .sort(function (a, b) { return ((a.it.status === 'off') - (b.it.status === 'off')) || (a.k - b.k); })
+      .map(function (x) { return x.it; });
+  }
+
+  var KIDS_GAMES = ['capivara', 'blocos', 'memoria', 'cobrinha', 'frutas', 'velha', 'quebrablocos', 'meteoros', 'corrida', 'pingpong', 'penaltis'];
+
+  // "Em alta": o que mais estão assistindo/jogando no servidor + jogos novos em alta
+  function trendingItems() {
+    var out = [], seen = {};
+    function add(it) { if (it && !seen[it.id] && it.status !== 'off') { seen[it.id] = 1; out.push(it); } }
+    (S.trending || []).forEach(function (t) { add(itemById(t.id)); });
+    games().filter(function (g) { return g.trending; }).forEach(add);
+    return out.slice(0, 14);
+  }
 
   function heroHtml() {
     var st = S.settings, acc = access();
     var title = st.heroTitle || 'Sua TV completa: canais ao vivo, filmes grátis e jogos no controle.';
-    var text = st.heroText || 'TV aberta, notícias 24h, esportes, novelas, desenhos e 8 jogos para jogar com o controle remoto ou com controle de videogame. Tudo de fontes oficiais.';
+    var text = st.heroText || 'TV aberta, notícias 24h, esportes, novelas, desenhos e 13 jogos para jogar com o controle remoto ou com controle de videogame. Tudo de fontes oficiais.';
     var cta = '';
     if (!LOCAL && S.online && S.user && !acc.premium) cta = '<button class="btn hot focusable" data-act="paywall">Assinar por ' + money(st.promoRemaining > 0 ? st.promoPrice : st.regularPrice) + '/mês</button>';
     return '<section class="hero"><h1>' + esc(title) + '</h1><p>' + esc(text) + '</p><div class="actions" data-row="hero">' +
@@ -160,9 +186,15 @@
       html += row('favs', '★ Meus Favoritos', f);
       var r = lsGet('ap_recent', []).map(itemById).filter(Boolean);
       html += row('recent', 'Continuar assistindo', r);
+      html += row('alta', '🔥 Em alta agora', trendingItems());
       html += row('abertos', catName('abertos'), catItems('abertos'));
       html += row('jogos', '🎮 Jogos no controle remoto', games());
       cats.forEach(function (c) { if (c.id !== 'abertos') html += row(c.id, c.name, catItems(c.id)); });
+    } else if (S.tab === 'kids') {
+      html += '<section class="hero" style="padding:1.6rem 2.2rem"><h1 style="font-size:2rem">Cantinho Kids 🧸</h1><p style="margin:0">Desenhos e jogos para a criançada, tudo num lugar só.</p></section>';
+      html += row('infantil', '📺 Desenhos e canais infantis', catItems('infantil'));
+      html += row('kidsgames', '🎮 Jogos para crianças', games().filter(function (g) { return KIDS_GAMES.indexOf(g.id) >= 0; }));
+      html += row('educacao', '📚 Aprender brincando', catItems('educacao'));
     } else if (S.tab === 'tv') {
       cats.forEach(function (c) { if (c.id !== 'filmes') html += row(c.id, c.name, catItems(c.id)); });
     } else if (S.tab === 'filmes') {
@@ -176,6 +208,7 @@
       html += accountHtml();
     }
     root.innerHTML = html;
+    root.scrollTop = 0;
     bindRoot();
     var first = root.querySelector('.tab.active');
     var target = (S.lastFocusSel && root.querySelector(S.lastFocusSel)) || root.querySelector('.hero .btn') || root.querySelector('.tile') || first;
@@ -185,7 +218,7 @@
 
   function accountHtml() {
     var u = S.user, st = S.settings;
-    if (LOCAL) return '<div class="center" style="min-height:auto"><div class="panel"><h1>Modo Dono</h1><p>Você está usando a versão do pendrive. Tudo liberado, sem login. Para vender para clientes, use o servidor (veja o arquivo LEIA-ME).</p></div></div>';
+    if (LOCAL) return '<div class="center" style="min-height:auto"><div class="panel"><h1>Modo Dono</h1><p>Você está usando a versão do pendrive. Tudo liberado, sem login. Para vender para clientes, use o servidor (veja o arquivo LEIA-ME).</p><div class="inline" data-row="acc">' + androidBtn() + '</div></div></div>';
     if (!u) return '<div class="center" style="min-height:auto"><div class="panel"><h1>Minha Conta</h1><p>Entre para ver sua assinatura.</p><div class="inline" data-row="acc"><button class="btn primary focusable" data-act="login">Entrar</button></div></div></div>';
     var status = { trial: 'Teste grátis', active: 'Assinante', expired: 'Teste encerrado', blocked: 'Bloqueado' }[u.status] || u.status;
     var refLink = location.origin + '/?ref=' + encodeURIComponent(u.referralCode || '');
@@ -199,8 +232,14 @@
       '<div class="inline" data-row="acc">' +
         '<button class="btn hot focusable" data-act="paywall">' + (u.status === 'active' ? 'Renovar assinatura' : 'Assinar agora') + '</button>' +
         (st.supportWhatsapp ? '<button class="btn ghost focusable" data-act="support">💬 Suporte no WhatsApp</button>' : '') +
+        androidBtn() +
         '<button class="btn ghost focusable" data-act="logout">Sair</button>' +
       '</div></div></div>';
+  }
+
+  // No app Android: permite trocar o endereço do servidor
+  function androidBtn() {
+    return window.AndroidTV && AndroidTV.resetServer ? '<button class="btn ghost focusable" data-act="server">📡 Trocar servidor</button>' : '';
   }
 
   function promoHtml() {
@@ -221,7 +260,7 @@
       promoHtml() +
       '<div class="stack" data-row="w">' +
         '<button class="btn primary focusable" data-act="register">Testar grátis por ' + st.trialDays + ' dias</button>' +
-        '<button class="btn ghost focusable" data-act="login">Já tenho conta</button>' +
+        '<button class="btn ghost focusable" data-act="login">Já tenho conta</button>' + androidBtn() +
       '</div><p class="note" style="margin-top:1.2rem">Só usamos fontes oficiais e legais. Canais pagos exigem assinatura nos apps oficiais.</p></div></div>';
     bindRoot();
     Input.focus(root.querySelector('.focusable'));
@@ -388,6 +427,7 @@
     if (act === 'register') return renderAuth('register');
     if (act === 'login') return renderAuth('login');
     if (act === 'welcome') return renderWelcome();
+    if (act === 'server') { if (window.AndroidTV && AndroidTV.resetServer) AndroidTV.resetServer(); return; }
     if (act === 'close') return closeModal();
     if (act === 'paywall') return openPaywall();
     if (act === 'pix') return checkout('pix');
@@ -423,7 +463,8 @@
     if (it.kind === 'game') {
       if (it.premium && !acc.premium) return openPaywall(S.user && S.user.status === 'expired' ? 'Seu teste terminou. Assine para continuar jogando os jogos premium.' : '"' + it.name + '" é um jogo premium.');
       pushRecent(it.id);
-      return GameHub.start(it.id, function () { renderHome(); });
+      var back = '.tile[data-id="' + it.id + '"][data-rowid="' + rowId + '"]';
+      return GameHub.start(it.id, function () { S.lastFocusSel = back; renderHome(); });
     }
     if (!acc.tv) return openPaywall('Seu teste terminou. Assine para continuar assistindo.');
     pushRecent(it.id);
@@ -433,14 +474,13 @@
     Player.open(playable, playable.indexOf(it));
   }
 
-  var ytCache = {};
+  // Devolve { channelId, live }. O servidor confere se o canal está ao vivo agora (cache de 10 min).
   function resolveYoutube(it) {
-    if (it.channelId) return Promise.resolve(it.channelId);
-    if (LOCAL || !S.online || !it.handle) return Promise.resolve(null);
-    if (ytCache[it.handle] !== undefined) return Promise.resolve(ytCache[it.handle]);
+    var fallback = { channelId: it.channelId || null, live: it.live !== false };
+    if (LOCAL || !S.online || !it.handle) return Promise.resolve(fallback);
     return api('GET', '/api/yt/resolve?handle=' + encodeURIComponent(it.handle))
-      .then(function (r) { ytCache[it.handle] = r.channelId || null; return ytCache[it.handle]; })
-      .catch(function () { return null; });
+      .then(function (r) { return { channelId: r.channelId || fallback.channelId, live: !!r.live }; })
+      .catch(function () { return fallback; });
   }
 
   function back() {
@@ -482,6 +522,7 @@
     S.settings = Object.assign({}, DEFAULT_SETTINGS, cfg.settings || {});
     if (cfg.catalog && cfg.catalog.items) S.catalog = cfg.catalog;
     S.gameOverrides = cfg.games || {};
+    S.trending = cfg.trending || [];
     document.title = S.settings.productName;
   }
 

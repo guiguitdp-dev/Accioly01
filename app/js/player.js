@@ -43,7 +43,7 @@
     el.innerHTML =
       '<div class="msg" id="pmsg"><div class="box"><div class="spinner"></div><div>Sintonizando <b>' + esc(it.name) + '</b>…</div></div></div>' +
       '<div class="osd" id="osd">' +
-        '<div class="title"><span class="live">AO VIVO</span>' + esc(it.name) + '</div>' +
+        '<div class="title"><span class="live" id="plabel">AO VIVO</span>' + esc(it.name) + '</div>' +
         '<div class="sub">' + esc(it.desc || '') + '</div>' +
         '<div class="inline">' +
           '<button class="btn ghost focusable" data-a="back">◀ Voltar</button>' +
@@ -109,8 +109,9 @@
 
   function playYoutube(it) {
     var fileMode = location.protocol === 'file:';
-    App.resolveYoutube(it).then(function (channelId) {
+    App.resolveYoutube(it).then(function (yt) {
       if (!state || current() !== it) return;
+      var channelId = yt.channelId;
       if (!channelId || fileMode) {
         setMsg('<div style="font-size:2.4rem">▶️</div><h2>' + esc(it.name) + '</h2><p>Este canal abre no YouTube oficial.</p>' +
           '<button class="btn primary focusable" id="ytopen">Abrir no YouTube</button>');
@@ -119,10 +120,19 @@
         Input.focus(b);
         return;
       }
+      var src;
+      if (yt.live) {
+        src = 'https://www.youtube.com/embed/live_stream?channel=' + encodeURIComponent(channelId);
+      } else {
+        // Sem transmissão agora: toca os vídeos mais recentes do canal oficial
+        src = 'https://www.youtube.com/embed/videoseries?list=UU' + encodeURIComponent(channelId.slice(2));
+        var lbl = state.el.querySelector('#plabel');
+        if (lbl) { lbl.textContent = 'VÍDEOS RECENTES'; lbl.style.background = '#334155'; }
+      }
       var f = document.createElement('iframe');
       f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
       f.referrerPolicy = 'strict-origin-when-cross-origin';
-      f.src = 'https://www.youtube.com/embed/live_stream?channel=' + encodeURIComponent(channelId) + '&autoplay=1&controls=0&rel=0&modestbranding=1&playsinline=1';
+      f.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'autoplay=1&controls=0&rel=0&modestbranding=1&playsinline=1';
       f.addEventListener('load', function () { setMsg(null); });
       state.el.insertBefore(f, state.el.firstChild);
       state.iframe = f;
