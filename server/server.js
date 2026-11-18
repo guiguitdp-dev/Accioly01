@@ -61,7 +61,9 @@ function seed() {
       youtubeApiKey: '',
       // Anúncios (Google AdSense — jogos HTML5 e banner). Só para quem NÃO assina.
       adsEnabled: false, adsensePublisherId: '', adsenseBannerSlot: '', adsTestMode: true, adFrequency: 120,
-      adsAudience: 'expirados', adsInAndroid: false
+      adsAudience: 'expirados', adsInAndroid: false,
+      // AdMob (app Android): ID do app só para o app-ads.txt; blocos de anúncio mudam sem recompilar
+      admobEnabled: false, admobAppId: '', admobInterstitialId: '', admobRewardedId: ''
     },
     users: [], orders: [], admins: [],
     catalog: loadDefaultCatalog(),
@@ -96,6 +98,18 @@ if (!D.admins.length) {
 function settings() { return D.settings; }
 function ytKey() { return process.env.YOUTUBE_API_KEY || D.settings.youtubeApiKey || ''; }
 const MEDIA_MOCK = !!process.env.MEDIA_MOCK;
+// IDs de TESTE oficiais do Google (usados enquanto o modo de teste estiver ligado)
+const ADMOB_TEST = { interstitial: 'ca-app-pub-3940256099942544/1033173712', rewarded: 'ca-app-pub-3940256099942544/5224354917' };
+const ADMOB_UNIT = /^ca-app-pub-\d{10,20}\/\d{5,15}$/;
+function admobPublic() {
+  const s = D.settings;
+  const test = !!s.adsTestMode;
+  return {
+    enabled: !!s.admobEnabled,
+    interstitial: test ? ADMOB_TEST.interstitial : (ADMOB_UNIT.test(s.admobInterstitialId || '') ? s.admobInterstitialId : ''),
+    rewarded: test ? ADMOB_TEST.rewarded : (ADMOB_UNIT.test(s.admobRewardedId || '') ? s.admobRewardedId : '')
+  };
+}
 function mpToken() { return process.env.MP_ACCESS_TOKEN || D.settings.mpAccessToken || ''; }
 function founders() { return D.users.filter((u) => u.founder).length; }
 function promoRemaining() { return Math.max(0, Number(D.settings.promoSlots) - founders()); }
@@ -129,7 +143,8 @@ function publicSettings() {
     youtubeEnabled: !!ytKey() || MEDIA_MOCK,
     ads: {
       enabled: !!(s.adsEnabled && /^ca-pub-\d{10,20}$/.test(s.adsensePublisherId || '')), client: s.adsensePublisherId, slot: s.adsenseBannerSlot,
-      test: !!s.adsTestMode, frequency: Number(s.adFrequency) || 120, audience: s.adsAudience, android: !!s.adsInAndroid
+      test: !!s.adsTestMode, frequency: Number(s.adFrequency) || 120, audience: s.adsAudience, android: !!s.adsInAndroid,
+      admob: admobPublic()
     }
   };
 }
@@ -491,7 +506,7 @@ route('GET', '/api/admin/stats', (req, res) => {
     revenue, revenueMonth, mrr, buyers, conversion: D.users.length ? buyers / D.users.length : 0,
     pendingOrders: D.orders.filter((o) => o.status === 'aguardando_confirmacao').length,
     ads7d: Object.entries(D.stats.daily).filter(([d]) => now - Date.parse(d) < 7 * DAY).reduce((n, [, v]) => n + (v.ad || 0), 0),
-    adsOn: publicSettings().ads.enabled,
+    adsOn: publicSettings().ads.enabled || !!D.settings.admobEnabled,
     days, topChannels: top('play'), topGames: top('game'), health: { checkedAt: D.health.checkedAt, broken: Object.values(D.health.results).filter((r) => !r.ok).length, total: Object.keys(D.health.results).length }
   });
 });
@@ -595,7 +610,8 @@ route('POST', '/api/admin/orders/:id', (req, res, body, params) => {
 const SETTING_TYPES = {
   productName: 'str', trialDays: 'num', promoPrice: 'num', regularPrice: 'num', promoSlots: 'num', planDays: 'num', freeChannels: 'bool', referralBonusDays: 'num',
   pixKey: 'str', pixKeyType: 'str', pixName: 'str', pixCity: 'str', mpAccessToken: 'secret', supportWhatsapp: 'str', announcement: 'str', heroTitle: 'str', heroText: 'str', publicUrl: 'str',
-  youtubeApiKey: 'secret', adsEnabled: 'bool', adsensePublisherId: 'str', adsenseBannerSlot: 'str', adsTestMode: 'bool', adFrequency: 'num', adsAudience: 'str', adsInAndroid: 'bool'
+  youtubeApiKey: 'secret', adsEnabled: 'bool', adsensePublisherId: 'str', adsenseBannerSlot: 'str', adsTestMode: 'bool', adFrequency: 'num', adsAudience: 'str', adsInAndroid: 'bool',
+  admobEnabled: 'bool', admobAppId: 'str', admobInterstitialId: 'str', admobRewardedId: 'str'
 };
 
 route('GET', '/api/admin/settings', (req, res) => {
@@ -784,6 +800,11 @@ const server = http.createServer(async (req, res) => {
   // ads.txt exigido pelo Google AdSense (gerado a partir do Painel do Dono)
   if (p === '/ads.txt') {
     const m = /^ca-pub-(\d+)$/.exec(D.settings.adsensePublisherId || '');
+    return send(res, m ? 200 : 404, m ? 'google.com, pub-' + m[1] + ', DIRECT, f08c47fec0942fa0\n' : '');
+  }
+  // app-ads.txt exigido pelo AdMob (no site que você informar na Play Store)
+  if (p === '/app-ads.txt') {
+    const m = /^ca-app-pub-(\d+)~/.exec(D.settings.admobAppId || '') || /^ca-pub-(\d+)$/.exec(D.settings.adsensePublisherId || '');
     return send(res, m ? 200 : 404, m ? 'google.com, pub-' + m[1] + ', DIRECT, f08c47fec0942fa0\n' : '');
   }
   if (p === '/privacidade' || p === '/privacidade/') return serveStatic(res, SITE_DIR, 'privacidade.html');

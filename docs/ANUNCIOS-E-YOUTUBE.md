@@ -40,8 +40,22 @@ Passo a passo:
 
 A receita aparece no painel do **AdSense**. No Painel do Dono você vê quantos anúncios foram pedidos nos últimos 7 dias.
 
-### E no app Android?
-Para anúncios dentro de apps, o Google exige o **AdMob** (com a "API WebView para anúncios"). Por isso, no APK os anúncios ficam desligados por padrão. Quando tiver conta AdMob aprovada, peça ao agente `dev-jogos` para integrar o AdMob no projeto `android/` e ligue "Anúncios no app Android" no painel.
+## 2b. Anúncios no app Android (AdMob) — já integrado
+
+O APK já vem com o **AdMob** (SDK oficial do Google): anúncio de **tela cheia entre partidas** e **anúncio premiado** ("ver 1 anúncio e jogar 30 min"). Valem as mesmas regras da web: só para quem não assina, nunca em cima de vídeos/canais. Antes de mostrar anúncios, o app pede consentimento quando a lei exige (Europa); no Brasil normalmente passa direto.
+
+Passo a passo:
+1. Crie a conta em **admob.google.com** (use a mesma conta Google do AdSense — o pagamento vai para o mesmo lugar).
+2. **Apps → Adicionar app → Android**. O AdMob só libera anúncios de verdade para apps publicados numa loja (Google Play, ou Amazon Appstore para Fire TV). Distribuindo só por APK/pendrive, os anúncios reais podem ficar limitados.
+3. Copie o **ID do app** (`ca-app-pub-...~...`):
+   - cole em **Painel do Dono → Configurações → AdMob**;
+   - gere o APK com ele: **GitHub → Actions → Gerar APK Android TV → Run workflow** → campo **admob_app_id**.
+4. **Blocos de anúncios → Adicionar**: crie um **Intersticial** e um **Premiado**. Copie os dois IDs (`ca-app-pub-.../...`) para o painel. Mudar os blocos depois **não** exige gerar outro APK.
+5. Na página do app na Play Store, informe seu site como "site do desenvolvedor". O servidor já gera o **`/app-ads.txt`** que o AdMob pede.
+6. Deixe o **modo de teste ligado** até o AdMob aprovar o app (o app usa os anúncios de teste do Google). Depois desligue. **Nunca clique nos seus próprios anúncios** — dá suspensão da conta.
+7. Ligue **"Anúncios no app Android"** no painel.
+
+Na TV, o anúncio fecha com o botão **VOLTAR** do controle. O AdMob costuma ter mais anúncios disponíveis no celular do que em TVs.
 
 ## 3. Estratégia recomendada
 - **Grátis com anúncios:** canais abertos + jogos grátis + música livre, com anúncios entre partidas.

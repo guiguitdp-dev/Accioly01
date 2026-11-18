@@ -170,6 +170,40 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
     ok('sem AdSense carregado, o jogo abre na hora', true);
     await page.evaluate(() => GameHub.stop());
 
+    console.log('AdMob (app Android, ponte simulada):');
+    await adm.click('nav button[data-t=config]');
+    await adm.waitForSelector('select[name=admobEnabled]');
+    await adm.selectOption('select[name=admobEnabled]', 'true');
+    await adm.fill('input[name=admobAppId]', 'ca-app-pub-1234567890123456~1234567890');
+    await adm.click('#cf button[type=submit]');
+    await adm.waitForSelector('text=Configurações salvas');
+    const appAds = await (await fetch(base + '/app-ads.txt')).text();
+    ok('app-ads.txt gerado automaticamente', appAds.indexOf('pub-1234567890123456, DIRECT') > 0, appAds);
+    await page.reload();
+    await page.waitForSelector('.topbar');
+    await page.evaluate(() => {
+      window.__adCalls = [];
+      window.AndroidTV = {
+        openUrl: function () {}, openApp: function () {}, resetServer: function () {},
+        adsInit: function (i, r) { window.__adCalls.push('init:' + i + '|' + r); },
+        interstitialReady: function () { return true; }, rewardedReady: function () { return true; },
+        showInterstitial: function (id) { window.__adCalls.push('inter'); setTimeout(function () { Ads._native(id, 'done'); }, 50); },
+        showRewarded: function (id) { window.__adCalls.push('reward'); setTimeout(function () { Ads._native(id, 'reward'); }, 50); }
+      };
+      Ads.setup(App.state.settings.ads, App.state.user, false);
+    });
+    const calls = await page.evaluate(() => window.__adCalls.slice());
+    ok('app Android inicia o AdMob com os blocos de teste do Google', calls[0] === 'init:ca-app-pub-3940256099942544/1033173712|ca-app-pub-3940256099942544/5224354917', calls.join(','));
+    ok('no app Android não usa banner do AdSense', await page.evaluate(() => Ads.banner() === ''));
+    await page.locator('.tile[data-id=cobrinha]').first().focus();
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('.game-screen canvas', { timeout: 3000 });
+    ok('anúncio de tela cheia do AdMob antes do jogo', (await page.evaluate(() => window.__adCalls)).indexOf('inter') >= 0);
+    await page.evaluate(() => GameHub.stop());
+    const reward = await page.evaluate(() => new Promise((res) => Ads.rewarded('teste', function () { res('ok'); }, function () { res('nenhum'); })));
+    ok('anúncio premiado do AdMob entrega a recompensa', reward === 'ok', reward);
+    await page.evaluate(() => { delete window.AndroidTV; Ads.setup(App.state.settings.ads, App.state.user, false); });
+
     console.log('Pagamento Pix ponta a ponta:');
     await adm.click('nav button[data-t=config]');
     await adm.waitForSelector('input[name=pixKey]');
