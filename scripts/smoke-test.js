@@ -26,6 +26,9 @@ try { ({ chromium } = require('playwright')); } catch (e) {
 
 const { server, getSetupCode } = require('../server/server.js');
 const results = [];
+// Erros de scripts de terceiros (AdSense/YouTube com IDs de teste) não contam: só os do nosso código
+const THIRD = /googlesyndication|doubleclick|googleads|google\.com|gstatic|googleapis|youtube|ytimg/;
+function own(e) { return !THIRD.test(String((e && e.stack) || '')); }
 function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); console.log((cond ? '  ✔ ' : '  ✘ ') + name + (extra && !cond ? ' — ' + extra : '')); }
 
 (async () => {
@@ -36,7 +39,7 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
   try {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     const page = await ctx.newPage();
-    page.on('pageerror', (e) => errors.push(e.message));
+    page.on('pageerror', (e) => { if (own(e)) errors.push(e.message); });
     const shot = async (n) => { if (shots) await page.screenshot({ path: path.join(shots, n + '.png') }); };
 
     console.log('App da TV (modo cliente):');
@@ -124,7 +127,7 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
 
     console.log('Painel do Dono:');
     const adm = await ctx.newPage();
-    adm.on('pageerror', (e) => errors.push('admin: ' + e.message));
+    adm.on('pageerror', (e) => { if (own(e)) errors.push('admin: ' + e.message); });
     await adm.goto(base + '/admin/');
     await adm.waitForSelector('input[name=code]');
     await adm.fill('input[name=code]', getSetupCode());
@@ -197,7 +200,7 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
 
     console.log('Pendrive (modo dono, file://):');
     const pd = await ctx.newPage();
-    pd.on('pageerror', (e) => errors.push('pendrive: ' + e.message));
+    pd.on('pageerror', (e) => { if (own(e)) errors.push('pendrive: ' + e.message); });
     await pd.goto('file://' + path.resolve(__dirname, '..', 'app', 'index.html'));
     await pd.waitForSelector('.topbar');
     ok('abre direto do pendrive em Modo Dono', await pd.isVisible('text=Modo Dono'));
