@@ -256,8 +256,13 @@
           '<label class="f"><span>Quem vê anúncios</span><select name="adsAudience"><option value="expirados"' + (s.adsAudience !== 'nao_assinantes' ? ' selected' : '') + '>Só quem terminou o teste e não assinou (recomendado)</option><option value="nao_assinantes"' + (s.adsAudience === 'nao_assinantes' ? ' selected' : '') + '>Todos que não assinam (inclui teste grátis)</option></select></label>' +
           '<label class="f"><span>Modo de teste (anúncios de exemplo)</span><select name="adsTestMode"><option value="true"' + (s.adsTestMode ? ' selected' : '') + '>Ligado — use até o AdSense aprovar</option><option value="false"' + (!s.adsTestMode ? ' selected' : '') + '>Desligado — anúncios reais (geram dinheiro)</option></select></label>' +
           f('adFrequency', 'Intervalo mínimo entre anúncios (segundos)', 'number', '', ' min="30" step="10"') +
-          '<label class="f"><span>Anúncios no app Android</span><select name="adsInAndroid"><option value="false"' + (!s.adsInAndroid ? ' selected' : '') + '>Desligado (recomendado até integrar o AdMob)</option><option value="true"' + (s.adsInAndroid ? ' selected' : '') + '>Ligado</option></select></label>' +
           '<div class="hint">Aparecem só entre partidas, no "ver 1 anúncio e jogar 30 min" e num banner na tela inicial — nunca em cima de vídeos ou canais. Assinantes não veem anúncios. Política de privacidade exigida pelo Google: <a href="/privacidade" target="_blank">/privacidade</a>.</div></div></div>' +
+        '<div class="box"><h2>📱 AdMob (anúncios no app Android)</h2>' +
+          '<label class="f"><span>Anúncios no app Android</span><select name="admobEnabled"><option value="false"' + (!s.admobEnabled ? ' selected' : '') + '>Desligado</option><option value="true"' + (s.admobEnabled ? ' selected' : '') + '>Ligado</option></select></label>' +
+          f('admobAppId', 'ID do app no AdMob', 'text', 'Formato ca-app-pub-1234567890123456~1234567890. Use o MESMO no GitHub → Actions → "Gerar APK Android TV" → campo admob_app_id. Gera o /app-ads.txt automaticamente.') +
+          f('admobInterstitialId', 'Bloco de anúncio intersticial (tela cheia)', 'text', 'Formato ca-app-pub-1234567890123456/1234567890 — aparece entre partidas.') +
+          f('admobRewardedId', 'Bloco de anúncio premiado (recompensado)', 'text', 'Formato ca-app-pub-1234567890123456/1234567890 — "ver 1 anúncio e jogar 30 min".') +
+          '<div class="hint">Com o <b>modo de teste</b> ligado (seção acima), o app usa os anúncios de teste do Google — use assim até o AdMob aprovar o app. Mudar os blocos aqui não exige gerar o APK de novo. Quem segue as regras de "Quem vê anúncios" é o mesmo da web: assinantes nunca veem.</div></div>' +
         '<button class="btn p" type="submit">Salvar configurações</button></form>';
       document.getElementById('cf').addEventListener('submit', function (e) {
         e.preventDefault();
