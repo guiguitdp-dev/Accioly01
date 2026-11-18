@@ -1,0 +1,16 @@
+{
+  "name": "accioly-play",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TV aberta ao vivo, canais grátis legais, filmes e jogos no controle remoto — com painel do dono, teste grátis e assinatura.",
+  "main": "server/server.js",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server/server.js",
+    "checar-canais": "node scripts/check-channels.js",
+    "pendrive": "node scripts/build-pendrive.js",
+    "teste": "node scripts/smoke-test.js",
+    "relatorio": "node scripts/report.js"
+  },
+  "license": "UNLICENSED"
+}

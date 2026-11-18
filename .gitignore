@@ -1,0 +1,14 @@
+# Dados dos clientes (NUNCA enviar para o GitHub)
+server/data/
+relatorios/*.json
+
+# Gerados
+dist/
+node_modules/
+*.log
+.DS_Store
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+tools/
