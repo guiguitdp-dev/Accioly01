@@ -9,7 +9,8 @@ Atualizado em: 2026-11-18
 - 37 itens no catálogo (HLS oficiais, YouTube oficiais e links de apps gratuitos). Primeira verificação real deve rodar no servidor do dono (no Brasil).
 
 ## Qualidade
-- Teste automático: 22/22 passando.
+- Teste automático: 25/25 passando (inclui pagamento Pix ponta a ponta). CI do GitHub verde.
+- APK Android TV compila no GitHub Actions (artefato "AcciolyPlay-AndroidTV").
 
 ## Números
 - Ainda sem vendas. Meta: 50 fundadores.
