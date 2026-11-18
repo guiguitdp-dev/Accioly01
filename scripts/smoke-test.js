@@ -38,6 +38,8 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
   const errors = [];
   try {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    // Teste sem internet: bloqueia scripts externos (AdSense, YouTube) para o resultado ser sempre o mesmo
+    await ctx.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (route) => route.abort());
     const page = await ctx.newPage();
     page.on('pageerror', (e) => { if (own(e)) errors.push(e.message); });
     const shot = async (n) => { if (shots) await page.screenshot({ path: path.join(shots, n + '.png') }); };
