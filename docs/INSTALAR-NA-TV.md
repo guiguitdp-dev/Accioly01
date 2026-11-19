@@ -2,6 +2,15 @@
 
 Escolha o seu caso:
 
+## ⭐ Mais fácil: link direto (celular, Android TV, TV Box, Fire TV)
+
+1. No aparelho, abra o navegador e entre em
+   **https://github.com/guiguitdp-dev/Accioly01/releases/download/app-latest/AcciolyPlay.apk**
+   (no celular dá para escanear o QR Code do README).
+   - Na Android TV/TV Box sem navegador: instale o app **Downloader** (grátis na Play Store) e digite esse link.
+2. Abra o arquivo baixado e permita **instalar apps desta fonte**.
+3. O app abre **funcionando sem servidor** (modo dono). Para conectar ao seu servidor depois: **Conta → 📡 Conectar ao meu servidor**.
+
 ## A) Android TV, Google TV, TV Box ou Fire TV (instala pelo pendrive) ✅ melhor opção
 
 **1. Baixar o APK (uma vez só):**

@@ -129,7 +129,7 @@
     var isNew = it.trending || it.novo;
     return '<button class="tile focusable' + (off ? ' off' : '') + '" style="--c:' + esc(it.color || '#334') + '" data-id="' + esc(it.id) + '" data-rowid="' + esc(rowId) + '">' +
       badge + (isFav(it.id) ? '<span class="fav">★</span>' : (isNew ? '<span class="ribbon">NOVO</span>' : '')) +
-      (it.emoji ? '<span class="emoji">' + it.emoji + '</span>' : '<span class="mono">' + esc(initials(it.name)) + '</span>') +
+      (it.emoji ? '<span class="emoji">' + it.emoji + '</span>' : '<span class="mono' + ((it.mono || '').length > 3 ? ' sm' : '') + '">' + esc(it.mono || initials(it.name)) + '</span>') +
       '<span class="name">' + esc(it.name) + '</span>' + (sub ? '<span class="sub">' + esc(sub) + '</span>' : '') +
       (lock ? '<span class="lock">🔒</span>' : '') + '</button>';
   }

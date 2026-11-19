@@ -206,3 +206,6 @@ a { color: var(--accent2); }
   .clock { display: none; }
 }
 @media (hover: hover) { .tile:hover { transform: scale(1.04); } }
+.tile .mono.sm { font-size: .72rem; letter-spacing: -.03em; }
+.tab { white-space: nowrap; flex: 0 0 auto; }
+@media (max-width: 700px) { .tabs { scrollbar-width: none; } .tabs::-webkit-scrollbar { display: none; } .tab { padding: .5rem .85rem; font-size: 1rem; } }

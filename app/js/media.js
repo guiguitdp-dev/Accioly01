@@ -189,4 +189,5 @@
   }
 
   window.MediaPlayer = { open: open, close: close, isOpen: function () { return !!st; } };
+  window.loadYouTubeApi = loadYT;
 })();

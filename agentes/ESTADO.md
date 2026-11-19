@@ -9,7 +9,11 @@ Atualizado em: 2026-11-18
 - v1.2: aba Música e Vídeos (YouTube oficial + Música livre/Audius) e AdSense só para não assinantes.
 - v1.3: AdMob no APK (intersticial + premiado, consentimento UMP; IDs de teste até o dono configurar). Dono precisa: chave YouTube API e conta AdSense aprovada (docs/ANUNCIOS-E-YOUTUBE.md).
 
-## Canais
+## Canais (v1.4)
+- Catálogo v2: canais tocando DENTRO do app (sinal oficial .m3u8 ou canal oficial no YouTube — ao vivo ou vídeos recentes). Pesquisa de fontes em nov/2026: handles corrigidos (@otimesbrasil, @tvcancaonova, @tvredevida.aovivo), Canal UOL removido (sem prova de ser oficial). Globo/Record: ao vivo completo só nos apps deles.
+- APK traz o app embutido (funciona sem servidor) + link fixo: releases/download/app-latest/AcciolyPlay.apk
+
+## Canais (antigo)
 - 37 itens no catálogo (HLS oficiais, YouTube oficiais e links de apps gratuitos). Primeira verificação real deve rodar no servidor do dono (no Brasil).
 
 ## Qualidade

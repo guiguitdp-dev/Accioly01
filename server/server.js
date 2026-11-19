@@ -80,6 +80,16 @@ function seed() {
 const db = createDb(DATA_DIR, seed);
 const D = db.data;
 
+// Catálogo novo (versão maior) substitui o antigo automaticamente
+(function migrateCatalog() {
+  const def = loadDefaultCatalog();
+  if ((D.catalog.version || 1) < (def.version || 1)) {
+    D.catalog = def;
+    db.saveNow();
+    console.log('[canais] catálogo atualizado para a versão ' + def.version);
+  }
+})();
+
 // Segredo dos tokens (gerado uma vez e guardado junto do banco)
 const secretFile = path.join(DATA_DIR, 'secret.key');
 if (!fs.existsSync(secretFile)) fs.writeFileSync(secretFile, crypto.randomBytes(32).toString('hex'), { mode: 0o600 });
@@ -159,7 +169,8 @@ function publicCatalog() {
     items: D.catalog.items.filter((i) => i.enabled !== false).map((i) => {
       const out = Object.assign({}, i);
       if (i.type === 'youtube' && !i.channelId && D.yt[i.handle] && D.yt[i.handle].channelId) out.channelId = D.yt[i.handle].channelId;
-      if (i.type === 'youtube' && D.yt[i.handle]) out.live = !!D.yt[i.handle].live;
+      const ytInfo = i.handle ? D.yt[i.handle] : (hr[i.id] && hr[i.id].channelId ? hr[i.id] : null);
+      if (i.type === 'youtube' && ytInfo) out.live = !!ytInfo.live;
       // Sinal fora do ar na última verificação (só para o que toca dentro do app)
       const h = hr[i.id];
       if (h && !h.ok && i.type !== 'link' && Date.now() - (h.at || 0) < DAY) out.status = 'off';
@@ -663,11 +674,19 @@ route('PUT', '/api/admin/catalog', (req, res, body) => {
       desc: String(it.desc || '').slice(0, 200), enabled: it.enabled !== false
     };
     if (!x.id || !x.name || !cats.has(x.cat)) return fail(res, 400, 'Item inválido: ' + (it.name || it.id || '?'));
-    if (x.type === 'youtube') { x.handle = String(it.handle || '').trim(); if (!/^@[\w.\-]{2,60}$/.test(x.handle)) return fail(res, 400, 'Handle do YouTube inválido em ' + x.name + ' (ex.: @CanalOficial)'); }
+    if (x.type === 'youtube') {
+      x.handle = String(it.handle || '').trim();
+      const hasId = /^UC[\w-]{22}$/.test(it.channelId || '');
+      if (x.handle && !/^@[\w.\-]{2,60}$/.test(x.handle)) return fail(res, 400, 'Handle do YouTube inválido em ' + x.name + ' (ex.: @CanalOficial)');
+      if (!x.handle && !hasId) return fail(res, 400, 'Informe o @handle ou o ID (UC...) do canal em ' + x.name);
+      if (!x.handle) delete x.handle;
+      if (it.live === false) x.live = false;
+    }
     else { x.url = String(it.url || '').trim(); if (!/^https?:\/\//.test(x.url)) return fail(res, 400, 'URL inválida em ' + x.name); }
     if (it.fallback) x.fallback = String(it.fallback).slice(0, 300);
     if (it.android && /^[\w.]{3,100}$/.test(it.android)) x.android = it.android;
     if (it.channelId && /^UC[\w-]{22}$/.test(it.channelId)) x.channelId = it.channelId;
+    if (it.mono) x.mono = String(it.mono).slice(0, 5);
     clean.push(x);
   }
   D.catalog.items = clean;
@@ -761,7 +780,7 @@ async function runHealth() {
     D.health = { checkedAt: Date.now(), results };
     for (const it of D.catalog.items) {
       const r = results[it.id];
-      if (it.type === 'youtube' && r && r.channelId) D.yt[it.handle] = { channelId: r.channelId, live: !!r.live, at: Date.now(), liveAt: Date.now() };
+      if (it.type === 'youtube' && it.handle && r && r.channelId) D.yt[it.handle] = { channelId: r.channelId, live: !!r.live, at: Date.now(), liveAt: Date.now() };
     }
     db.save();
     const bad = Object.values(results).filter((r) => !r.ok).length;
