@@ -41,6 +41,11 @@ async function checkItem(it) {
       const ok = r.status < 400 && r.text.indexOf('#EXTM3U') >= 0;
       return { ok, status: r.status, ms: r.ms, note: ok ? 'sinal OK' : 'playlist inválida/fora do ar' };
     }
+    if (it.type === 'youtube' && !it.handle && it.channelId) {
+      const lr = await get('https://www.youtube.com/channel/' + it.channelId + '/live', 15000);
+      const live = /"isLiveNow":true|"isLive":true|hqdefault_live\.jpg/.test(lr.text);
+      return { ok: lr.status < 400, channelId: it.channelId, live, note: lr.status < 400 ? (live ? 'AO VIVO agora' : 'canal OK (sem live no momento)') : 'canal não encontrado' };
+    }
     if (it.type === 'youtube') {
       const y = await resolveYoutube(it.handle);
       return { ok: !!y.channelId, channelId: y.channelId, live: y.live, note: y.channelId ? (y.live ? 'AO VIVO agora' : 'canal OK (sem live no momento)') : (y.error || 'falhou') };

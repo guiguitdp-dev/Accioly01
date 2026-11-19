@@ -126,18 +126,24 @@
       else badge = '<span class="badge live">● AO VIVO</span>';
       lock = !acc.tv;
     }
+    var isNew = it.trending || it.novo;
     return '<button class="tile focusable' + (off ? ' off' : '') + '" style="--c:' + esc(it.color || '#334') + '" data-id="' + esc(it.id) + '" data-rowid="' + esc(rowId) + '">' +
-      badge + (isFav(it.id) ? '<span class="fav">★</span>' : '') +
-      (it.emoji ? '<span class="emoji">' + it.emoji + '</span>' : '') +
+      badge + (isFav(it.id) ? '<span class="fav">★</span>' : (isNew ? '<span class="ribbon">NOVO</span>' : '')) +
+      (it.emoji ? '<span class="emoji">' + it.emoji + '</span>' : '<span class="mono' + ((it.mono || '').length > 3 ? ' sm' : '') + '">' + esc(it.mono || initials(it.name)) + '</span>') +
       '<span class="name">' + esc(it.name) + '</span>' + (sub ? '<span class="sub">' + esc(sub) + '</span>' : '') +
       (lock ? '<span class="lock">🔒</span>' : '') + '</button>';
+  }
+
+  function initials(n) {
+    var w = String(n || '').replace(/[^\wÀ-ú!+ ]/g, '').split(/\s+/).filter(Boolean);
+    return (w.length > 1 ? w[0][0] + w[1][0] : (w[0] || '?').slice(0, 2)).toUpperCase();
   }
 
   var rowsIndex = {}; // rowId -> lista de itens (para trocar de canal com ▲▼)
   function row(id, title, items) {
     if (!items.length) return '';
     rowsIndex[id] = items;
-    return '<section class="row"><h2>' + esc(title) + '</h2><div class="track" data-row="' + esc(id) + '">' +
+    return '<section class="row"><h2>' + esc(title) + ' <small>' + items.length + '</small></h2><div class="track" data-row="' + esc(id) + '">' +
       items.map(function (it) { return tile(it, id); }).join('') + '</div></section>';
   }
 
@@ -160,16 +166,33 @@
     return out.slice(0, 14);
   }
 
+  // Destaques que giram sozinhos no topo (param enquanto o foco estiver neles)
+  function heroSlides() {
+    var st = S.settings;
+    return [
+      { kicker: 'AO VIVO', title: st.heroTitle || 'Sua TV completa: canais ao vivo, filmes grátis e jogos no controle.', text: st.heroText || 'TV aberta, notícias 24h, esportes, novelas e desenhos — tudo de fontes oficiais, tocando aqui dentro.', c1: '#7c5cff', c2: '#ff7a45' },
+      { kicker: 'LANÇAMENTO', title: '🎵 Música e Vídeos', text: 'Busque qualquer música ou clipe, veja o que está em alta no Brasil e toque em sequência. E ainda: música livre sem anúncios.', c1: '#22c55e', c2: '#0ea5e9', tab: 'midia', btn: '🎵 Abrir Música' },
+      { kicker: 'JOGOS EM ALTA', title: '🦫 Corre Capivara, ⚽ Pênaltis e mais', text: '13 jogos para jogar com o controle remoto — sozinho ou em família, com recordes.', c1: '#f59e0b', c2: '#ef4444', tab: 'jogos', btn: '🎮 Ver jogos' },
+      { kicker: 'KIDS', title: '🧸 Cantinho Kids', text: 'Desenhos e jogos para a criançada, tudo num lugar só.', c1: '#ec4899', c2: '#8b5cf6', tab: 'kids', btn: '🧸 Abrir Kids' }
+    ];
+  }
   function heroHtml() {
-    var st = S.settings, acc = access();
-    var title = st.heroTitle || 'Sua TV completa: canais ao vivo, filmes grátis e jogos no controle.';
-    var text = st.heroText || 'TV aberta, notícias 24h, esportes, novelas, desenhos e 13 jogos para jogar com o controle remoto ou com controle de videogame. Tudo de fontes oficiais.';
+    var st = S.settings, acc = access(), s = heroSlides()[S.heroIdx || 0];
     var cta = '';
     if (!LOCAL && S.online && S.user && !acc.premium) cta = '<button class="btn hot focusable" data-act="paywall">Assinar por ' + money(st.promoRemaining > 0 ? st.promoPrice : st.regularPrice) + '/mês</button>';
-    return '<section class="hero"><h1>' + esc(title) + '</h1><p>' + esc(text) + '</p><div class="actions" data-row="hero">' +
+    return '<section class="hero" id="hero" style="--h1:' + s.c1 + ';--h2:' + s.c2 + '"><span class="kicker">' + esc(s.kicker) + '</span><h1>' + esc(s.title) + '</h1><p>' + esc(s.text) + '</p><div class="actions" data-row="hero">' +
       '<button class="btn primary focusable" data-act="watch">▶ Assistir agora</button>' +
-      '<button class="btn ghost focusable" data-tab="jogos">🎮 Jogar</button>' + cta + '</div></section>';
+      (s.tab ? '<button class="btn ghost focusable" data-tab="' + s.tab + '">' + esc(s.btn) + '</button>' : '<button class="btn ghost focusable" data-tab="jogos">🎮 Jogar</button>') + cta + '</div>' +
+      '<div class="dots">' + heroSlides().map(function (x, i) { return '<i' + (i === (S.heroIdx || 0) ? ' class="on"' : '') + '></i>'; }).join('') + '</div></section>';
   }
+  setInterval(function () {
+    var h = document.getElementById('hero');
+    if (!h || h.contains(document.activeElement) || S.modalOpen || S.tab !== 'inicio') return;
+    S.heroIdx = ((S.heroIdx || 0) + 1) % heroSlides().length;
+    var tmp = document.createElement('div'); tmp.innerHTML = heroHtml();
+    h.replaceWith(tmp.firstChild);
+    bindRoot(document.getElementById('hero'));
+  }, 8000);
 
   function renderHome() {
     rowsIndex = {};
@@ -215,6 +238,13 @@
     bindRoot();
     Ads.fillBanners(root);
     if (S.tab === 'midia') loadMedia();
+    var kf = root.querySelector('#keyf');
+    if (kf) kf.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var v = String(kf.querySelector('[name=ytkey]').value || '').trim();
+      if (!v || v.indexOf('•') >= 0) return toast('Cole a chave do YouTube (começa com AIza)');
+      LocalMedia.setKey(v); S.mediaHome = null; toast('Chave salva neste aparelho ✅');
+    });
     var first = root.querySelector('.tab.active');
     var target = (S.lastFocusSel && root.querySelector(S.lastFocusSel)) || root.querySelector('.hero .btn') || root.querySelector('.tile') || first;
     S.lastFocusSel = null;
@@ -245,9 +275,9 @@
     var box = root.querySelector('#mrows');
     var f = root.querySelector('#msf');
     if (f) f.addEventListener('submit', function (e) { e.preventDefault(); searchMedia(root.querySelector('#mq').value); });
-    if (LOCAL || !S.online) { box.innerHTML = '<p class="note" style="margin:0 var(--safe)">Música e vídeos funcionam com o servidor ligado (na versão do pendrive, abra o YouTube pelo app oficial).</p>'; return; }
+    var offline = LOCAL || !S.online;
     var fresh = S.mediaHome && Date.now() - S.mediaHome.at < 600000;
-    (fresh ? Promise.resolve(S.mediaHome.data) : api('GET', '/api/media/home')).then(function (d) {
+    (fresh ? Promise.resolve(S.mediaHome.data) : (offline ? LocalMedia.home() : api('GET', '/api/media/home'))).then(function (d) {
       if (!fresh) S.mediaHome = { at: Date.now(), data: d };
       if (S.tab !== 'midia' || !root.querySelector('#mrows')) return;
       drawMedia(d);
@@ -260,7 +290,7 @@
       html += mediaRow('mfres', '🎧 "' + S.mediaQuery + '" — Música livre (sem anúncios)', r.free, 'audio');
       if (!r.youtube.length && !r.free.length) html += '<p class="note" style="margin:0 var(--safe) 1.4rem">Nada encontrado para "' + esc(S.mediaQuery) + '".</p>';
     }
-    if (!home.youtube) html += '<div class="banner">A busca do YouTube ainda não foi ativada pelo dono (Painel do Dono → Configurações → YouTube).</div>';
+    if (!home.youtube) html += '<div class="banner">' + (home.local ? 'Para buscar e ver o que está em alta no YouTube, cole sua chave grátis da YouTube Data API em <b>Conta → Chave do YouTube</b>.' : 'A busca do YouTube ainda não foi ativada pelo dono (Painel do Dono → Configurações → YouTube).') + '</div>';
     html += mediaRow('mmusic', '🎵 Músicas em alta no Brasil', home.music, 'yt');
     html += mediaRow('mvideos', '🔥 Vídeos em alta no Brasil', home.videos, 'yt');
     html += mediaRow('mfree', '🎧 Música livre em alta — sem anúncios', home.free, 'audio');
@@ -274,7 +304,8 @@
     S.mediaQuery = q;
     var box = root.querySelector('#mrows');
     box.innerHTML = '<div class="spinner"></div>';
-    api('GET', '/api/media/search?q=' + encodeURIComponent(q) + '&tipo=' + (S.mediaTipo === 'videos' ? 'videos' : 'music')).then(function (r) {
+    var tipo = S.mediaTipo === 'videos' ? 'videos' : 'music';
+    ((LOCAL || !S.online) ? LocalMedia.search(q, tipo) : api('GET', '/api/media/search?q=' + encodeURIComponent(q) + '&tipo=' + tipo)).then(function (r) {
       S.mediaResults = r;
       drawMedia((S.mediaHome && S.mediaHome.data) || { youtube: true, music: [], videos: [], free: [] });
       var first = root.querySelector('#mrows .tile');
@@ -288,7 +319,11 @@
 
   function accountHtml() {
     var u = S.user, st = S.settings;
-    if (LOCAL) return '<div class="center" style="min-height:auto"><div class="panel"><h1>Modo Dono</h1><p>Você está usando a versão do pendrive. Tudo liberado, sem login. Para vender para clientes, use o servidor (veja o arquivo LEIA-ME).</p><div class="inline" data-row="acc">' + androidBtn() + '</div></div></div>';
+    if (LOCAL) return '<div class="center" style="min-height:auto"><form class="panel" id="keyf"><h1>Modo Dono</h1>' +
+      '<p>' + (window.AndroidTV ? 'App funcionando direto neste aparelho, sem servidor.' : 'Versão do pendrive.') + ' Tudo liberado, sem login. Para vender para clientes, use o servidor (veja o LEIA-ME).</p>' +
+      '<label class="field"><span>Chave do YouTube (opcional — libera busca e "em alta" na aba Música)</span><input class="focusable" name="ytkey" type="text" autocomplete="off" placeholder="AIza..." value="' + esc(LocalMedia.hasKey() ? '••••••••' : '') + '"></label>' +
+      '<div class="inline" data-row="acc"><button type="submit" class="btn primary focusable">Salvar chave</button>' + androidBtn() + '</div>' +
+      '<p class="note">Como pegar a chave grátis: console.cloud.google.com → ativar "YouTube Data API v3" → Credenciais → Criar chave de API.</p></form></div>';
     if (!u) return '<div class="center" style="min-height:auto"><div class="panel"><h1>Minha Conta</h1><p>Entre para ver sua assinatura.</p><div class="inline" data-row="acc"><button class="btn primary focusable" data-act="login">Entrar</button></div></div></div>';
     var status = { trial: 'Teste grátis', active: 'Assinante', expired: 'Teste encerrado', blocked: 'Bloqueado' }[u.status] || u.status;
     var refLink = location.origin + '/?ref=' + encodeURIComponent(u.referralCode || '');
@@ -309,7 +344,9 @@
 
   // No app Android: permite trocar o endereço do servidor
   function androidBtn() {
-    return window.AndroidTV && AndroidTV.resetServer ? '<button class="btn ghost focusable" data-act="server">📡 Trocar servidor</button>' : '';
+    if (!(window.AndroidTV && AndroidTV.resetServer)) return '';
+    return '<button class="btn ghost focusable" data-act="server">📡 ' + (LOCAL ? 'Conectar ao meu servidor' : 'Trocar servidor') + '</button>' +
+      (!LOCAL && AndroidTV.useLocal ? '<button class="btn ghost focusable" data-act="local">📱 Usar sem servidor</button>' : '');
   }
 
   function promoHtml() {
@@ -487,14 +524,15 @@
   function bindAct(el) {
     el.addEventListener('click', function () { doAct(el.getAttribute('data-act'), el); });
   }
-  function bindRoot() {
-    root.querySelectorAll('[data-tab]').forEach(function (b) {
+  function bindRoot(scope) {
+    scope = scope || root;
+    scope.querySelectorAll('[data-tab]').forEach(function (b) {
       b.addEventListener('click', function () { S.tab = b.getAttribute('data-tab'); S.lastFocusSel = '.tab[data-tab="' + S.tab + '"]'; renderHome(); });
     });
-    root.querySelectorAll('.tile').forEach(function (b) {
+    scope.querySelectorAll('.tile').forEach(function (b) {
       b.addEventListener('click', function () { openItem(b.getAttribute('data-id'), b.getAttribute('data-rowid')); });
     });
-    root.querySelectorAll('[data-act]').forEach(bindAct);
+    scope.querySelectorAll('[data-act]').forEach(bindAct);
   }
 
   function doAct(act, el) {
@@ -502,6 +540,7 @@
     if (act === 'login') return renderAuth('login');
     if (act === 'welcome') return renderWelcome();
     if (act === 'server') { if (window.AndroidTV && AndroidTV.resetServer) AndroidTV.resetServer(); return; }
+    if (act === 'local') { if (window.AndroidTV && AndroidTV.useLocal) AndroidTV.useLocal(); return; }
     if (act === 'close') return closeModal();
     if (act === 'paywall') return openPaywall();
     if (act === 'pix') return checkout('pix');
@@ -509,7 +548,8 @@
     if (act === 'reward') {
       var g = S.rewardGame;
       return Ads.rewarded('premium-' + (g && g.id), function () {
-        unlock(g.id); closeModal(); toast('🎉 Liberado por 30 minutos!'); startGame(g, 'jogos');
+        unlock(g.id); closeModal(); toast('🎉 Liberado por 30 minutos!');
+        if (g.kind === 'game') startGame(g, 'jogos');
       }, function () { toast('Nenhum anúncio disponível agora. Tente mais tarde ou assine.'); });
     }
     if (act === 'mp') return checkout('mp');
@@ -547,6 +587,8 @@
     }
     if (it.kind === 'yt' || it.kind === 'audio') {
       if (!acc.tv) return openPaywall('Seu teste terminou. Assine para continuar.');
+      if (S.settings.premiumNovidades !== false && !acc.premium && !unlocked('midia'))
+        return openPaywall('🎵 Música e Vídeos é um lançamento exclusivo para assinantes.', { id: 'midia', name: 'Música e Vídeos' });
       return MediaPlayer.open(list.length ? list : [it], Math.max(0, list.indexOf(it)));
     }
     if (!acc.tv) return openPaywall('Seu teste terminou. Assine para continuar assistindo.');
@@ -568,10 +610,29 @@
   // Devolve { channelId, live }. O servidor confere se o canal está ao vivo agora (cache de 10 min).
   function resolveYoutube(it) {
     var fallback = { channelId: it.channelId || null, live: it.live !== false };
+    if ((LOCAL || !S.online) && it.handle && window.AndroidTV && AndroidTV.ytResolve) return nativeYt(it.handle, fallback);
     if (LOCAL || !S.online || !it.handle) return Promise.resolve(fallback);
     return api('GET', '/api/yt/resolve?handle=' + encodeURIComponent(it.handle))
       .then(function (r) { return { channelId: r.channelId || fallback.channelId, live: !!r.live }; })
       .catch(function () { return fallback; });
+  }
+
+  // App Android sem servidor: o próprio aparelho descobre o canal (ID guardado 7 dias)
+  var ytSeq = 0, ytWait = {};
+  window.__ytNative = function (id, channelId, live) { if (ytWait[id]) { ytWait[id]({ channelId: channelId, live: !!live }); delete ytWait[id]; } };
+  function nativeYt(handle, fallback) {
+    var memo = lsGet('ap_yt_' + handle, null);
+    return new Promise(function (resolve) {
+      var id = 'yt' + (++ytSeq), done = false;
+      var finish = function (r) {
+        if (done) return; done = true;
+        if (r && r.channelId) { lsSet('ap_yt_' + handle, { channelId: r.channelId, at: Date.now() }); return resolve(r); }
+        resolve(memo && memo.channelId ? { channelId: memo.channelId, live: fallback.live } : fallback);
+      };
+      ytWait[id] = finish;
+      setTimeout(function () { finish(null); }, 20000);
+      try { AndroidTV.ytResolve(handle, id); } catch (e) { finish(null); }
+    });
   }
 
   function back() {
@@ -622,7 +683,7 @@
     S.token = lsGet('ap_token', null);
     var ref = (new URLSearchParams(location.search)).get('ref');
     if (ref) lsSet('ap_ref', ref);
-    if ('serviceWorker' in navigator && !isFile) navigator.serviceWorker.register('sw.js').catch(function () {});
+    if ('serviceWorker' in navigator && !isFile && !LOCAL) navigator.serviceWorker.register('sw.js').catch(function () {});
     if (LOCAL) { renderHome(); return; }
     api('GET', '/api/public/config').then(function (cfg) {
       applyConfig(cfg);

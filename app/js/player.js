@@ -45,12 +45,13 @@
       '<div class="osd" id="osd">' +
         '<div class="title"><span class="live" id="plabel">AO VIVO</span>' + esc(it.name) + '</div>' +
         '<div class="sub">' + esc(it.desc || '') + '</div>' +
+        zapHint() +
         '<div class="inline">' +
           '<button class="btn ghost focusable" data-a="back">◀ Voltar</button>' +
           '<button class="btn ghost focusable" data-a="prev">▲ Canal anterior</button>' +
           '<button class="btn ghost focusable" data-a="next">▼ Próximo canal</button>' +
           '<button class="btn ghost focusable" data-a="fav">' + (App.isFav(it.id) ? '★ Favorito' : '☆ Favoritar') + '</button>' +
-          (it.fallback || it.handle ? '<button class="btn ghost focusable" data-a="site">↗ Abrir no site oficial</button>' : '') +
+          (it.fallback || it.handle || it.channelId ? '<button class="btn ghost focusable" data-a="site">↗ ' + (it.android ? 'Abrir no app oficial' : 'Abrir no site oficial') + '</button>' : '') +
         '</div>' +
         '<div class="note" style="margin-top:.8rem">▲/▼ troca de canal · OK abre este menu · VOLTAR sai</div>' +
       '</div>';
@@ -61,6 +62,14 @@
     App.track('play', it.id);
     if (it.type === 'hls') playHls(it);
     else if (it.type === 'youtube') playYoutube(it);
+  }
+
+  // Mostra qual é o canal anterior/próximo (como um guia de TV)
+  function zapHint() {
+    var n = state.list.length;
+    if (n < 2) return '';
+    var prev = state.list[(state.index - 1 + n) % n], next = state.list[(state.index + 1) % n];
+    return '<div class="zap">▲ ' + esc(prev.name) + ' &nbsp;·&nbsp; ▼ ' + esc(next.name) + '</div>';
   }
 
   function setMsg(html) {
@@ -130,16 +139,26 @@
         if (lbl) { lbl.textContent = 'VÍDEOS RECENTES'; lbl.style.background = '#334155'; }
       }
       var f = document.createElement('iframe');
+      f.id = 'chiframe';
       f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
       f.referrerPolicy = 'strict-origin-when-cross-origin';
-      f.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'autoplay=1&controls=0&rel=0&modestbranding=1&playsinline=1';
+      f.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'autoplay=1&controls=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&origin=' + encodeURIComponent(location.origin);
       f.addEventListener('load', function () { setMsg(null); });
       state.el.insertBefore(f, state.el.firstChild);
       state.iframe = f;
+      // Se a emissora bloquear a exibição fora do YouTube (ex.: jogos com direitos), mostra a saída
+      if (window.loadYouTubeApi) window.loadYouTubeApi().then(function () {
+        if (!state || state.iframe !== f) return;
+        try {
+          new YT.Player(f, { events: { onError: function () {
+            failed(it, 'Esta transmissão só pode ser vista no YouTube (a emissora bloqueou a exibição em outros apps).');
+          } } });
+        } catch (e) {}
+      }).catch(function () {});
     });
   }
 
-  function ytUrl(it) { return 'https://www.youtube.com/' + it.handle + '/live'; }
+  function ytUrl(it) { return it.handle ? 'https://www.youtube.com/' + it.handle + '/live' : 'https://www.youtube.com/channel/' + it.channelId + '/live'; }
 
   function destroyMedia() {
     if (!state) return;
@@ -179,7 +198,7 @@
     if (a === 'prev') return zap(-1);
     if (a === 'next') return zap(1);
     if (a === 'fav') { App.toggleFav(it.id); var b = state.el.querySelector('[data-a=fav]'); if (b) b.textContent = App.isFav(it.id) ? '★ Favorito' : '☆ Favoritar'; return; }
-    if (a === 'site') return App.openExternal(it.fallback || ytUrl(it));
+    if (a === 'site') return App.openExternal(it.fallback || ytUrl(it), it.android || (it.type === 'youtube' && !it.fallback ? 'com.google.android.youtube.tv' : ''));
   }
 
   function onAction(a) {

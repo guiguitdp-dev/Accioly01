@@ -1,6 +1,6 @@
 /* Blocos Encaixe — encaixe peças no tabuleiro 8x8 e complete linhas/colunas. Gênero "block puzzle". */
 GameHub.register({
-  id: 'blocos', name: 'Blocos Encaixe', emoji: '🟪', color: '#7c3aed', premium: false, trending: true,
+  id: 'blocos', name: 'Blocos Encaixe', emoji: '🟪', color: '#7c3aed', premium: true, trending: true,
   desc: 'Encaixe as peças e complete linhas e colunas. Fácil de aprender, difícil de largar!',
   help: 'Setas movem a peça · OK encaixa · seta → até o fim troca de peça',
   create: function (api) {
