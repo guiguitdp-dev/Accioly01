@@ -8,7 +8,7 @@ Funciona em **Android TV / Google TV / TV Box / Fire TV** (instala pelo pendrive
 
 ## Começar com 1 clique
 
-- **Windows:** dê dois cliques em **`INSTALAR-WINDOWS.bat`** (instala o Node.js se faltar, monta o pendrive, **cria os atalhos na Área de Trabalho**, liga o servidor e abre o Painel do Dono). Para ligar junto com o Windows: **`INICIAR-COM-O-WINDOWS.bat`**.
+- **Windows:** dê dois cliques em **`INSTALAR-WINDOWS.bat`** (instala o Node.js se faltar, monta o pendrive, **cria os atalhos na Área de Trabalho**, liga o servidor e abre o Painel do Dono). Para ligar junto com o Windows: **`INICIAR-COM-O-WINDOWS.bat`**. Para preparar um pendrive (abre em tela cheia nos canais com dois cliques): **`COPIAR-PARA-PENDRIVE.bat`**.
 - **Atalho na Área de Trabalho:** **`CRIAR-ATALHO.bat`** cria os ícones **"Accioly Play"** (abre o app em janela própria, como um programa, e liga o servidor sozinho) e **"Accioly Play - Painel do Dono"**, além do atalho no Menu Iniciar. Se o Windows avisar "O Windows protegeu o computador", clique em **Mais informações → Executar assim mesmo**.
 - **Mac/Linux:** `bash instalar-mac-linux.sh`
 - **Android (celular, Android TV, TV Box):** **`INSTALAR-NO-ANDROID.bat`** instala o APK pelo cabo USB ou pelo Wi-Fi. Ou copie o APK no pendrive.

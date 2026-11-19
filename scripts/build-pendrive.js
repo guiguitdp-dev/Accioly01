@@ -33,9 +33,32 @@ copyDir(path.join(ROOT, 'app'), path.join(out, 'app'));
 const cfg = "window.APP_CONFIG = {\n  name: 'Accioly Play',\n  serverUrl: " + JSON.stringify(server) + ",\n  localMode: " + (server ? 'false' : 'true') + "\n};\n";
 fs.writeFileSync(path.join(out, 'app', 'js', 'config.js'), cfg);
 
-// Atalho na raiz do pendrive
-fs.writeFileSync(path.join(out, 'ABRIR-ACCIOLY-PLAY.html'),
+// Atalhos na raiz do pendrive
+// Mac/Linux (ou qualquer navegador): abre o app no navegador padrão.
+fs.writeFileSync(path.join(out, 'ABRIR NO MAC OU LINUX.html'),
   '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=app/index.html"><title>Accioly Play</title><a href="app/index.html">Abrir Accioly Play</a>\n');
+// Windows: dois cliques e o app abre em TELA CHEIA, como aplicativo (Edge ou Chrome),
+// direto na tela de canais. Usa só %~dp0 (caminho do próprio pendrive), sem caminho fixo,
+// então funciona em qualquer letra de unidade (E:, F:...) e em pastas com acento.
+fs.writeFileSync(path.join(out, 'ABRIR ACCIOLY PLAY.bat'), [
+  '@echo off',
+  'rem Accioly Play - abre o app do pendrive em tela cheia. Para sair: Alt+F4.',
+  'set "U=%~dp0app\\index.html"',
+  'set "U=file:///%U:\\=/%"',
+  'set "PERFIL=%LOCALAPPDATA%\\AcciolyPlay\\pendrive"',
+  'set "FLAGS=--start-fullscreen --autoplay-policy=no-user-gesture-required --no-first-run --no-default-browser-check"',
+  'set "B=%ProgramFiles(x86)%\\Microsoft\\Edge\\Application\\msedge.exe"',
+  'if not exist "%B%" set "B=%ProgramFiles%\\Microsoft\\Edge\\Application\\msedge.exe"',
+  'if not exist "%B%" set "B=%ProgramFiles%\\Google\\Chrome\\Application\\chrome.exe"',
+  'if not exist "%B%" set "B=%ProgramFiles(x86)%\\Google\\Chrome\\Application\\chrome.exe"',
+  'if not exist "%B%" set "B=%LOCALAPPDATA%\\Google\\Chrome\\Application\\chrome.exe"',
+  'if exist "%B%" (',
+  '  start "" "%B%" --app="%U%" --user-data-dir="%PERFIL%" %FLAGS%',
+  ') else (',
+  '  start "" "%~dp0app\\index.html"',
+  ')',
+  ''
+].join('\r\n'));
 
 const apkDir = path.join(ROOT, 'dist', 'apk');
 let apk = '';
@@ -49,15 +72,20 @@ fs.writeFileSync(path.join(out, 'LEIA-ME.txt'), [
   '',
   server ? 'Versão CLIENTE: precisa de internet e de conta em ' + server : 'Versão MODO DONO: tudo liberado, sem login (uso pessoal).',
   '',
-  'NO COMPUTADOR (Windows, Mac ou Linux):',
-  '  Dê dois cliques em ABRIR-ACCIOLY-PLAY.html (abre no navegador).',
-  '  Aperte F11 para tela cheia. Use as setas + Enter, ou um controle de videogame.',
+  'NO COMPUTADOR / NOTEBOOK COM WINDOWS:',
+  '  Dê dois cliques em "ABRIR ACCIOLY PLAY" (abre em tela cheia, já nos canais).',
+  '  Use as setas + Enter, ou um controle de videogame. Para sair: Alt+F4.',
+  '  (O Windows não deixa nenhum pendrive abrir programas sozinho ao conectar,',
+  '   por segurança. Por isso é preciso esse clique duplo.)',
+  '',
+  'NO MAC OU LINUX:',
+  '  Dê dois cliques em "ABRIR NO MAC OU LINUX.html". Aperte F11 para tela cheia.',
   '',
   'NA ANDROID TV / GOOGLE TV / TV BOX / FIRE TV:',
   apk ? '  1. Conecte o pendrive na TV.' : '  (Gere o APK pelo GitHub Actions — veja docs/INSTALAR-NA-TV.md — e rode este comando de novo.)',
   apk ? '  2. Abra um gerenciador de arquivos (ex.: "File Commander" ou "X-plore", grátis na Play Store).' : '',
   apk ? '  3. Toque em AcciolyPlay-AndroidTV.apk e confirme a instalação ("permitir fontes desconhecidas").' : '',
-  apk ? '  4. O app aparece na tela inicial da TV.' : '',
+  apk ? '  4. O app aparece na tela inicial da TV e abre direto nos canais (sem precisar do PC).' : '',
   '',
   'NA SMART TV SAMSUNG / LG (sem Android):',
   '  Essas TVs não instalam apps pelo pendrive. Abra o navegador da TV e acesse',
