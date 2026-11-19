@@ -2,7 +2,8 @@ plugins {
     id 'com.android.application'
 }
 
-// Endereço que o app abre. Vazio = o app pergunta o endereço na primeira vez (APK universal).
+// Endereço que o app abre. Vazio = abre o app embutido no APK (assets/app, copiado pelo
+// workflow), direto nos canais em Modo Dono, sem servidor. Dá para trocar em Conta > Trocar servidor.
 // Para clientes, fixe o endereço: gradle assembleDebug -PappUrl=https://seu-dominio.com.br/tv/
 def appUrl = (project.findProperty('appUrl') ?: '').toString().replace('"', '')
 // AdMob: ID do APP (fica no AndroidManifest). Sem informar, usa o ID de TESTE do Google.
@@ -17,8 +18,8 @@ android {
         applicationId 'com.acciolyplay.tv'
         minSdk 21
         targetSdk 34
-        versionCode 3
-        versionName '1.2'
+        versionCode 4
+        versionName '1.3'
         buildConfigField 'String', 'APP_URL', "\"${appUrl}\""
         manifestPlaceholders = [admobAppId: admobAppId]
     }

@@ -24,6 +24,9 @@ import android.widget.Toast;
  */
 public class MainActivity extends Activity {
 
+    /** App da TV embutido no APK (copiado de app/ pelo workflow): abre sem servidor, em Modo Dono. */
+    static final String LOCAL_URL = "file:///android_asset/app/index.html";
+
     private WebView web;
     private String base;
     private SharedPreferences prefs;
@@ -37,6 +40,8 @@ public class MainActivity extends Activity {
         // Endereço fixo (APK para clientes) ou o que o dono digitou na primeira abertura
         base = BuildConfig.APP_URL;
         if (base == null || base.isEmpty()) base = prefs.getString("server", "");
+        // Sem servidor: abre o app embutido, direto nos canais (Modo Dono)
+        if (base.isEmpty()) base = LOCAL_URL;
 
         web = new WebView(this);
         web.setBackgroundColor(Color.rgb(7, 7, 12));
@@ -60,7 +65,7 @@ public class MainActivity extends Activity {
 
             @Override
             public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-                if (failingUrl != null && !base.isEmpty() && failingUrl.startsWith(base)) {
+                if (failingUrl != null && !isLocal() && failingUrl.startsWith(base)) {
                     view.loadData(offlinePage(), "text/html; charset=utf-8", "UTF-8");
                 }
             }
@@ -74,8 +79,16 @@ public class MainActivity extends Activity {
         web.requestFocus();
 
         if (state != null) web.restoreState(state);
-        else if (base.isEmpty()) showSetup();
         else web.loadUrl(base);
+    }
+
+    private boolean isLocal() {
+        return LOCAL_URL.equals(base);
+    }
+
+    /** Modo Dono embutido só no APK universal. APK de cliente (APP_URL fixo) nunca libera. */
+    private static boolean localAllowed() {
+        return BuildConfig.APP_URL == null || BuildConfig.APP_URL.isEmpty();
     }
 
     /** Tela de primeira abertura: pede o endereço do servidor (aparece na janela do servidor no PC). */
@@ -87,10 +100,14 @@ public class MainActivity extends Activity {
                 + "<p style='color:#bbb;font-size:20px'>Digite o endereço do servidor. Ele aparece na janela do servidor no seu computador, na linha <b>\"Na TV (mesma rede Wi-Fi)\"</b>.</p>"
                 + "<input id='u' type='url' value='" + (last.isEmpty() ? "http://192.168." : last) + "' style='width:100%;font-size:28px;padding:14px;border-radius:12px;border:2px solid #555;background:#111;color:#fff'>"
                 + "<p><button id='b' style='font-size:26px;padding:14px 30px;border-radius:12px;border:0;background:#7c5cff;color:#fff'>Salvar e abrir</button></p>"
-                + "<p style='color:#888'>Exemplo: http://192.168.0.15:3000/tv/</p></div>"
-                + "<script>var u=document.getElementById('u');u.focus();"
-                + "document.getElementById('b').onclick=function(){AndroidTV.setServer(u.value)};"
-                + "u.onkeydown=function(e){if(e.keyCode==13||e.keyCode==40){document.getElementById('b').focus();e.preventDefault();}};</script></body></html>";
+                + "<p style='color:#888'>Exemplo: http://192.168.0.15:3000/tv/</p>"
+                + (localAllowed() ? "<p><button id='l' style='font-size:22px;padding:12px 26px;border-radius:12px;border:0;background:#333;color:#fff'>Usar sem servidor (Modo Dono)</button></p>" : "")
+                + "</div>"
+                + "<script>var u=document.getElementById('u'),b=document.getElementById('b'),l=document.getElementById('l');u.focus();"
+                + "b.onclick=function(){AndroidTV.setServer(u.value)};if(l)l.onclick=function(){AndroidTV.useLocal()};"
+                + "u.onkeydown=function(e){if(e.keyCode==13||e.keyCode==40){b.focus();e.preventDefault();}};"
+                + "b.onkeydown=function(e){if(e.keyCode==40&&l){l.focus();e.preventDefault();}else if(e.keyCode==38){u.focus();e.preventDefault();}};"
+                + "if(l)l.onkeydown=function(e){if(e.keyCode==38){b.focus();e.preventDefault();}};</script></body></html>";
         web.loadDataWithBaseURL("https://accioly.setup/", html, "text/html", "UTF-8", null);
     }
 
@@ -105,6 +122,7 @@ public class MainActivity extends Activity {
     }
 
     private boolean sameSite(String url) {
+        if (url.startsWith("file:///android_asset/")) return isLocal();
         try {
             Uri a = Uri.parse(url), b = Uri.parse(base);
             return a.getHost() != null && a.getHost().equals(b.getHost());
@@ -200,6 +218,16 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void useLocal() {
+            if (!localAllowed()) return;
+            runOnUiThread(() -> {
+                prefs.edit().remove("server").apply();
+                base = LOCAL_URL;
+                web.loadUrl(base);
+            });
+        }
+
+        @JavascriptInterface
         public void resetServer() {
             runOnUiThread(MainActivity.this::showSetup);
         }
@@ -208,7 +236,12 @@ public class MainActivity extends Activity {
     @Override
     public void onBackPressed() {
         // Pergunta ao app web se ele trata o VOLTAR (fechar player, jogo, menu...)
-        if (base.isEmpty()) { finish(); return; }
+        // Na tela de configurar servidor (página de dados), VOLTAR retorna ao app embutido
+        String atual = web.getUrl();
+        if (atual == null || atual.startsWith("https://accioly.setup/") || atual.startsWith("data:")) {
+            if (isLocal()) web.loadUrl(base); else finish();
+            return;
+        }
         web.evaluateJavascript("(window.__tvBack && window.__tvBack()) ? 'sim' : 'nao'", value -> {
             if (!"\"sim\"".equals(value)) finish(); // o app web é de página única
         });

@@ -7,11 +7,12 @@ on:
   push:
     paths:
       - 'android/**'
+      - 'app/**'
       - '.github/workflows/android-apk.yml'
   workflow_dispatch:
     inputs:
       app_url:
-        description: 'Endereço fixo do app (ex.: https://seudominio.com.br/tv/). Deixe vazio para o app perguntar na 1ª abertura.'
+        description: 'Endereço fixo do app (ex.: https://seudominio.com.br/tv/). Deixe vazio para o app abrir direto nos canais (Modo Dono, sem servidor).'
         required: false
         default: ''
       admob_app_id:
@@ -34,6 +35,15 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      # O app da TV vai DENTRO do APK: sem servidor configurado, o APK abre
+      # direto nos canais (Modo Dono, igual ao pendrive), mesmo sem PC ligado.
+      - name: Embutir o app no APK
+        run: |
+          rm -rf android/app/src/main/assets/app
+          mkdir -p android/app/src/main/assets
+          cp -r app android/app/src/main/assets/app
+          rm -f android/app/src/main/assets/app/sw.js
+          test -f android/app/src/main/assets/app/index.html
       - name: Compilar APK
         working-directory: android
         env:
