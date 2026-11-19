@@ -416,13 +416,20 @@ route('POST', '/api/events', (req, res, body) => {
 route('GET', '/api/yt/resolve', async (req, res, body, params, query) => {
   const handle = String(query.get('handle') || '');
   const cached = D.yt[handle];
-  if (cached && Date.now() - cached.at < 7 * DAY && Date.now() - (cached.liveAt || cached.at) < 600e3) return send(res, 200, { channelId: cached.channelId, live: cached.live });
-  if (limited(req, 'yt', 120, 600e3)) return send(res, 200, { channelId: cached ? cached.channelId : null, live: cached ? cached.live : false });
+  const out = (c) => ({ channelId: c ? c.channelId : null, live: c ? !!c.live : false, videoId: c && c.live ? c.videoId || null : null });
+  if (cached && Date.now() - cached.at < 7 * DAY && Date.now() - (cached.liveAt || cached.at) < 600e3) return send(res, 200, out(cached));
+  if (limited(req, 'yt', 120, 600e3)) return send(res, 200, out(cached));
   try {
-    const r = await health.resolveYoutube(handle);
-    if (r.channelId) { D.yt[handle] = { channelId: r.channelId, live: r.live, at: Date.now(), liveAt: Date.now() }; db.save(); }
-    send(res, 200, { channelId: r.channelId || (cached && cached.channelId) || null, live: r.live });
-  } catch (e) { send(res, 200, { channelId: cached ? cached.channelId : null, live: cached ? cached.live : false }); }
+    // ID do canal já conhecido (cache recente ou ID oficial do catálogo): só confere o ao vivo de agora
+    const fromCache = cached && cached.channelId && Date.now() - cached.at < 7 * DAY ? cached.channelId : '';
+    const fromCatalog = (D.catalog.items || []).some((i) => i.handle === handle && i.channelId === query.get('channelId')) ? query.get('channelId') : '';
+    const known = fromCache || fromCatalog;
+    let r;
+    if (/^UC[\w-]{22}$/.test(known)) r = Object.assign({ channelId: known }, await health.liveVideo(known));
+    else r = await health.resolveYoutube(handle);
+    if (r.channelId) { D.yt[handle] = { channelId: r.channelId, live: r.live, videoId: r.videoId || null, at: cached && cached.channelId === r.channelId ? cached.at : Date.now(), liveAt: Date.now() }; db.save(); }
+    send(res, 200, out(r.channelId ? D.yt[handle] : cached));
+  } catch (e) { send(res, 200, out(cached)); }
 });
 
 // ---------------- Música e vídeos ----------------

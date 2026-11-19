@@ -12,10 +12,13 @@ import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
+
+import androidx.webkit.WebViewAssetLoader;
 
 /**
  * App Android TV do Accioly Play: abre o app web (servidor do dono) em tela cheia,
@@ -24,8 +27,14 @@ import android.widget.Toast;
  */
 public class MainActivity extends Activity {
 
-    /** App da TV embutido no APK (copiado de app/ pelo workflow): abre sem servidor, em Modo Dono. */
-    static final String LOCAL_URL = "file:///android_asset/app/index.html";
+    /**
+     * App da TV embutido no APK (copiado de app/ pelo workflow): abre sem servidor, em Modo Dono.
+     * Servido por https (WebViewAssetLoader) para o player oficial do YouTube funcionar dentro do app.
+     */
+    static final String LOCAL_HOST = "appassets.androidplatform.net";
+    static final String LOCAL_URL = "https://" + LOCAL_HOST + "/assets/app/index.html";
+
+    private WebViewAssetLoader assets;
 
     private WebView web;
     private String base;
@@ -53,11 +62,27 @@ public class MainActivity extends Activity {
         s.setLoadWithOverviewMode(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
 
+        assets = new WebViewAssetLoader.Builder()
+                .setDomain(LOCAL_HOST)
+                .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
+                .build();
+
         web.setWebChromeClient(new WebChromeClient());
         web.setWebViewClient(new WebViewClient() {
             @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                Uri u = request.getUrl();
+                if (LOCAL_HOST.equals(u.getHost()) && "/api/yt/resolve".equals(u.getPath())) {
+                    return YtLive.response(u.getQueryParameter("channelId"));
+                }
+                return assets.shouldInterceptRequest(u);
+            }
+
+            @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
+                // Player do YouTube e outros iframes ficam dentro do app
+                if (!request.isForMainFrame()) return false;
                 if (sameSite(url)) return false;
                 openExternal(url);
                 return true;
@@ -122,7 +147,6 @@ public class MainActivity extends Activity {
     }
 
     private boolean sameSite(String url) {
-        if (url.startsWith("file:///android_asset/")) return isLocal();
         try {
             Uri a = Uri.parse(url), b = Uri.parse(base);
             return a.getHost() != null && a.getHost().equals(b.getHost());

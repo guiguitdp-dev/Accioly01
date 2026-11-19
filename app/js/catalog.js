@@ -34,9 +34,9 @@
       { id: 'globo', android: 'com.globo.globotv', name: 'TV Globo', cat: 'abertos', type: 'link', color: '#1f6feb',
         url: 'https://globoplay.globo.com/',
         desc: 'Sinal ao vivo da Globo da sua região no Globoplay. Crie a Conta Globo grátis e escolha "Ao vivo".' },
-      { id: 'sbt', name: 'SBT', cat: 'abertos', type: 'link', color: '#e3a008',
-        url: 'https://www.sbt.com.br/aovivo',
-        desc: 'Programação ao vivo no site oficial do SBT.' },
+      { id: 'sbt', name: 'SBT', cat: 'abertos', type: 'youtube', color: '#e3a008',
+        handle: '@SBT', channelId: 'UCR3TOnFWDeAlT-Ho6LueDmg', fallback: 'https://www.sbt.com.br/ao-vivo',
+        desc: 'Sinal ao vivo do SBT no canal oficial do YouTube, direto no app.' },
       { id: 'band', name: 'Band', cat: 'abertos', type: 'link', color: '#0e9f6e',
         url: 'https://www.band.uol.com.br/ao-vivo',
         desc: 'Band ao vivo no site oficial / Bandplay.' },
@@ -57,31 +57,31 @@
 
       // ---------------- NOTÍCIAS ----------------
       { id: 'cnnbrasil', name: 'CNN Brasil', cat: 'noticias', type: 'youtube', color: '#b91c1c',
-        handle: '@CNNbrasil', desc: 'Notícias 24h no canal oficial do YouTube.' },
+        handle: '@CNNbrasil', channelId: 'UCvdwhh_fDyWccR42-rReZLw', desc: 'Notícias 24h no canal oficial do YouTube.' },
       { id: 'jpnews', name: 'Jovem Pan News', cat: 'noticias', type: 'youtube', color: '#1d4ed8',
-        handle: '@jovempannews', desc: 'Notícias ao vivo no canal oficial.' },
+        handle: '@jovempannews', channelId: 'UCP391YRAjSOdM_bwievgaZA', desc: 'Notícias ao vivo no canal oficial.' },
       { id: 'sbtnews', name: 'SBT News', cat: 'noticias', type: 'youtube', color: '#ca8a04',
-        handle: '@SBTNews', desc: 'Canal de notícias 24h do SBT no YouTube.' },
+        handle: '@SBTNews', channelId: 'UC376n347Ob5Lwzq2WGzF1AA', desc: 'Canal de notícias 24h do SBT no YouTube.' },
       { id: 'recordnews', name: 'Record News', cat: 'noticias', type: 'youtube', color: '#1e40af',
-        handle: '@recordnews', desc: 'Notícias ao vivo da Record.' },
+        handle: '@recordnews', channelId: 'UCuiLR4p6wQ3xLEm15pEn1Xw', desc: 'Notícias ao vivo da Record.' },
       { id: 'bandnews', name: 'Band Jornalismo', cat: 'noticias', type: 'youtube', color: '#047857',
-        handle: '@BandJornalismo', desc: 'Jornalismo da Band ao vivo.' },
+        handle: '@BandJornalismo', channelId: 'UCoa-D_VfMkFrCYodrOC9-mA', desc: 'Jornalismo da Band ao vivo.' },
       { id: 'timesbrasil', name: 'Times Brasil', cat: 'noticias', type: 'youtube', color: '#334155',
-        handle: '@TimesBrasil', desc: 'Economia e negócios ao vivo.' },
+        handle: '@TimesBrasil', channelId: 'UC2vs-PnhPNxACC5wti_KMTg', desc: 'Economia e negócios ao vivo.' },
       { id: 'canaluol', name: 'Canal UOL', cat: 'noticias', type: 'hls', color: '#ea580c',
         url: 'https://video24.mais.uol.com.br/live/6146.m3u8', desc: 'Sinal oficial do Canal UOL.' },
       { id: 'tvcamara', name: 'TV Câmara', cat: 'noticias', type: 'hls', color: '#15803d',
         url: 'https://stream3.camara.gov.br/tv1/manifest.m3u8', desc: 'TV oficial da Câmara dos Deputados.' },
       { id: 'tvsenado', name: 'TV Senado', cat: 'noticias', type: 'youtube', color: '#1e3a8a',
-        handle: '@TVSenado', desc: 'TV oficial do Senado Federal.' },
+        handle: '@TVSenado', channelId: 'UCLgti7NuK0RuW9wty-fxPjQ', desc: 'TV oficial do Senado Federal.' },
       { id: 'canalgov', name: 'Canal Gov', cat: 'noticias', type: 'hls', color: '#0f766e',
         url: 'https://canalgov-stream.ebc.com.br/index.m3u8', desc: 'Canal oficial do Governo Federal (EBC).' },
       { id: 'canalrural', name: 'Canal Rural', cat: 'noticias', type: 'youtube', color: '#65a30d',
-        handle: '@canalrural', desc: 'Agronegócio ao vivo.' },
+        handle: '@canalrural', channelId: 'UCPumJ2ayrr-JDsA9JDCUDDQ', desc: 'Agronegócio ao vivo.' },
 
       // ---------------- ESPORTES ----------------
       { id: 'cazetv', name: 'CazéTV', cat: 'esportes', type: 'youtube', color: '#7c3aed',
-        handle: '@CazeTV', desc: 'Transmissões oficiais e gratuitas de jogos e eventos (quando ao vivo).' },
+        handle: '@CazeTV', channelId: 'UCZiYbVptd3PVPf4f6eR6UaQ', desc: 'Transmissões oficiais e gratuitas de jogos e eventos (quando ao vivo).' },
       { id: 'ge', name: 'ge (Globo Esporte)', cat: 'esportes', type: 'link', color: '#16a34a',
         url: 'https://ge.globo.com/', desc: 'Notícias, gols e o canal grátis ge FAST no Globoplay.' },
       { id: 'plutoesportes', android: 'tv.pluto.android', name: 'Pluto TV Esportes', cat: 'esportes', type: 'link', color: '#111827',
@@ -105,9 +105,9 @@
 
       // ---------------- INFANTIL ----------------
       { id: 'galinha', name: 'Galinha Pintadinha', cat: 'infantil', type: 'youtube', color: '#2563eb',
-        handle: '@GalinhaPintadinha', desc: 'Canal oficial (toca o ao vivo quando houver).' },
+        handle: '@GalinhaPintadinha', channelId: 'UCBAb_DK4GYZqZR9MFA7y2Xg', live: false, desc: 'Clipes e desenhos do canal oficial, direto no app.' },
       { id: 'monica', name: 'Turma da Mônica', cat: 'infantil', type: 'youtube', color: '#dc2626',
-        handle: '@TurmadaMonica', desc: 'Canal oficial da Turma da Mônica.' },
+        handle: '@TurmadaMonica', channelId: 'UCV4XcEqBswMCryorV_gNENw', live: false, desc: 'Canal oficial da Turma da Mônica.' },
       { id: 'plutokids', android: 'tv.pluto.android', name: 'Pluto TV Kids', cat: 'infantil', type: 'link', color: '#22c55e',
         url: 'https://pluto.tv/br/live-tv', desc: 'Desenhos grátis na Pluto TV (categoria Kids).' },
 
@@ -117,15 +117,15 @@
       { id: 'tvers', name: 'TVE RS', cat: 'educacao', type: 'hls', color: '#0369a1',
         url: 'https://streaming.procergs.com.br:8443/tve/stve/playlist.m3u8', desc: 'TV educativa oficial do RS.' },
       { id: 'tvcultura_yt', name: 'TV Cultura (YouTube)', cat: 'educacao', type: 'youtube', color: '#0e7490',
-        handle: '@tvcultura', desc: 'Programas da TV Cultura no canal oficial.' },
+        handle: '@tvcultura', channelId: 'UCjOJvvYe6tyEHY21OD33h8A', desc: 'Programas da TV Cultura no canal oficial.' },
 
       // ---------------- FÉ E FAMÍLIA ----------------
       { id: 'cancaonova', name: 'Canção Nova', cat: 'fe', type: 'youtube', color: '#0ea5e9',
-        handle: '@cancaonova', desc: 'Canal oficial ao vivo.' },
+        handle: '@cancaonova', channelId: 'UC6V9mqiVuzd-v3ozUfCtZFA', desc: 'Canal oficial ao vivo.' },
       { id: 'aparecida', name: 'TV Aparecida', cat: 'fe', type: 'youtube', color: '#1d4ed8',
-        handle: '@TVAparecida', desc: 'Canal oficial ao vivo.' },
+        handle: '@TVAparecida', channelId: 'UCfYrK5JU5EznsnK3wQE7iIg', desc: 'Canal oficial ao vivo.' },
       { id: 'redevida', name: 'Rede Vida', cat: 'fe', type: 'youtube', color: '#0f766e',
-        handle: '@redevida', desc: 'Canal oficial ao vivo.' }
+        handle: '@redevida', channelId: 'UCO8Xj__-fz-YJEJ2gN7h9gQ', desc: 'Canal oficial ao vivo.' }
     ]
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = CATALOG;

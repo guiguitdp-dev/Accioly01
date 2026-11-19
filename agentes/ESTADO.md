@@ -1,6 +1,6 @@
 # Estado atual (memória curta da equipe — máx. ~40 linhas)
 
-Atualizado em: 2026-11-18
+Atualizado em: 2026-11-19
 
 ## Produto
 - v1.1: 13 jogos (5 novos em alta), fileira Em alta, aba Kids, status de canal, vídeos recentes no YouTube, APK universal, instaladores de 1 clique.
@@ -11,6 +11,8 @@ Atualizado em: 2026-11-18
 
 ## Canais
 - 37 itens no catálogo (HLS oficiais, YouTube oficiais e links de apps gratuitos). Primeira verificação real deve rodar no servidor do dono (no Brasil).
+- v1.4 (19/11): SBT passou a tocar no app (live oficial "SBT Ao Vivo" no YouTube). Todo item YouTube tem `channelId`. O app toca o live de agora por ID do vídeo (`/api/yt/resolve` → `videoId`), também no pendrive (abrir.ps1 em 127.0.0.1) e no APK (app embutido em https://appassets..., YtLive.java). `live_stream?channel=` falha em vários canais.
+- NÃO dá (DRM/login/regra nº 1): Globo, Record, Band ao vivo; tirar sinal de apps (Globoplay, Pluto) ou YouTube sem anúncio (ReVanced). CazéTV bloqueia embed de jogos: o app mostra o aviso + "Abrir no YouTube".
 
 ## Qualidade
 - Teste automático: 53/53 passando (Pix, 13 jogos, Música e Vídeos, AdSense, AdMob simulado).

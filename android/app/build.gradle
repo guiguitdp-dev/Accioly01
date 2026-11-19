@@ -35,6 +35,9 @@ android {
 }
 
 dependencies {
+    // Serve o app embutido por https://appassets.androidplatform.net (o player do YouTube
+    // exige um endereço http(s); em file:// ele se recusa a tocar)
+    implementation 'androidx.webkit:webkit:1.11.0'
     // Anúncios AdMob (tela cheia e recompensado) + consentimento (UMP)
     implementation 'com.google.android.gms:play-services-ads:23.6.0'
     implementation 'com.google.android.ump:user-messaging-platform:3.1.0'

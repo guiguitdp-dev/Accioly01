@@ -43,6 +43,8 @@ jobs:
           mkdir -p android/app/src/main/assets
           cp -r app android/app/src/main/assets/app
           rm -f android/app/src/main/assets/app/sw.js
+          # Servido por https://appassets.androidplatform.net -> força o Modo Dono
+          printf "window.APP_CONFIG = {\n  name: 'Accioly Play',\n  serverUrl: '',\n  localMode: true\n};\n" > android/app/src/main/assets/app/js/config.js
           test -f android/app/src/main/assets/app/index.html
       - name: Compilar APK
         working-directory: android

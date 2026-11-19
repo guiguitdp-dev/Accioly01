@@ -565,12 +565,21 @@
     if (Ads.on) Ads.interstitial('start', go); else go();
   }
 
-  // Devolve { channelId, live }. O servidor confere se o canal está ao vivo agora (cache de 10 min).
+  // Devolve { channelId, live, videoId }. Quem responde /api/yt/resolve confere o ao vivo de agora:
+  // o servidor do dono, o abridor do pendrive (127.0.0.1) ou o próprio APK. Em file:// não há quem pergunte.
   function resolveYoutube(it) {
-    var fallback = { channelId: it.channelId || null, live: it.live !== false };
-    if (LOCAL || !S.online || !it.handle) return Promise.resolve(fallback);
-    return api('GET', '/api/yt/resolve?handle=' + encodeURIComponent(it.handle))
-      .then(function (r) { return { channelId: r.channelId || fallback.channelId, live: !!r.live }; })
+    var fallback = { channelId: it.channelId || null, live: it.live !== false, videoId: null };
+    if (!it.handle || isFile || (!LOCAL && !S.online)) return Promise.resolve(fallback);
+    if (it.live === false) return Promise.resolve(fallback); // canal sem ao vivo: vídeos recentes
+    var q = '/api/yt/resolve?handle=' + encodeURIComponent(it.handle) + (it.channelId ? '&channelId=' + encodeURIComponent(it.channelId) : '');
+    var req = LOCAL
+      ? Promise.race([
+          fetch(q).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }),
+          new Promise(function (_, no) { setTimeout(function () { no(new Error('tempo')); }, 8000); })
+        ])
+      : api('GET', q);
+    return req
+      .then(function (r) { return { channelId: r.channelId || fallback.channelId, live: !!r.live, videoId: r.videoId || null }; })
       .catch(function () { return fallback; });
   }
 
@@ -622,7 +631,8 @@
     S.token = lsGet('ap_token', null);
     var ref = (new URLSearchParams(location.search)).get('ref');
     if (ref) lsSet('ap_ref', ref);
-    if ('serviceWorker' in navigator && !isFile) navigator.serviceWorker.register('sw.js').catch(function () {});
+    // Pendrive/APK (Modo Dono) não usam cache de PWA: evita versão velha presa no aparelho
+    if ('serviceWorker' in navigator && !isFile && !LOCAL) navigator.serviceWorker.register('sw.js').catch(function () {});
     if (LOCAL) { renderHome(); return; }
     api('GET', '/api/public/config').then(function (cfg) {
       applyConfig(cfg);

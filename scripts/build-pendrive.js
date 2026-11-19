@@ -29,6 +29,7 @@ function copyDir(src, dst) {
 
 fs.rmSync(out, { recursive: true, force: true });
 copyDir(path.join(ROOT, 'app'), path.join(out, 'app'));
+fs.rmSync(path.join(out, 'app', 'sw.js'), { force: true }); // cache de PWA não serve no pendrive
 
 const cfg = "window.APP_CONFIG = {\n  name: 'Accioly Play',\n  serverUrl: " + JSON.stringify(server) + ",\n  localMode: " + (server ? 'false' : 'true') + "\n};\n";
 fs.writeFileSync(path.join(out, 'app', 'js', 'config.js'), cfg);
@@ -38,25 +39,21 @@ fs.writeFileSync(path.join(out, 'app', 'js', 'config.js'), cfg);
 fs.writeFileSync(path.join(out, 'ABRIR NO MAC OU LINUX.html'),
   '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=app/index.html"><title>Accioly Play</title><a href="app/index.html">Abrir Accioly Play</a>\n');
 // Windows: dois cliques e o app abre em TELA CHEIA, como aplicativo (Edge ou Chrome),
-// direto na tela de canais. Usa só %~dp0 (caminho do próprio pendrive), sem caminho fixo,
-// então funciona em qualquer letra de unidade (E:, F:...) e em pastas com acento.
+// direto na tela de canais. O abrir-pendrive.ps1 serve a pasta app em http://127.0.0.1
+// (só neste PC): em file:// o player oficial do YouTube não toca dentro do app.
+// Usa só %~dp0 (caminho do próprio pendrive): funciona em qualquer letra de unidade.
+// O .ps1 vai com BOM para o PowerShell 5.1 ler os acentos certo.
+fs.writeFileSync(path.join(out, 'app', 'abrir-pendrive.ps1'),
+  '﻿' + fs.readFileSync(path.join(__dirname, 'pendrive', 'abrir.ps1'), 'utf8').replace(/^﻿/, '').replace(/\r?\n/g, '\r\n'));
 fs.writeFileSync(path.join(out, 'ABRIR ACCIOLY PLAY.bat'), [
   '@echo off',
   'rem Accioly Play - abre o app do pendrive em tela cheia. Para sair: Alt+F4.',
-  'set "U=%~dp0app\\index.html"',
-  'set "U=file:///%U:\\=/%"',
-  'set "PERFIL=%LOCALAPPDATA%\\AcciolyPlay\\pendrive"',
-  'set "FLAGS=--start-fullscreen --autoplay-policy=no-user-gesture-required --no-first-run --no-default-browser-check"',
-  'set "B=%ProgramFiles(x86)%\\Microsoft\\Edge\\Application\\msedge.exe"',
-  'if not exist "%B%" set "B=%ProgramFiles%\\Microsoft\\Edge\\Application\\msedge.exe"',
-  'if not exist "%B%" set "B=%ProgramFiles%\\Google\\Chrome\\Application\\chrome.exe"',
-  'if not exist "%B%" set "B=%ProgramFiles(x86)%\\Google\\Chrome\\Application\\chrome.exe"',
-  'if not exist "%B%" set "B=%LOCALAPPDATA%\\Google\\Chrome\\Application\\chrome.exe"',
-  'if exist "%B%" (',
-  '  start "" "%B%" --app="%U%" --user-data-dir="%PERFIL%" %FLAGS%',
-  ') else (',
+  'where powershell >nul 2>nul',
+  'if errorlevel 1 (',
   '  start "" "%~dp0app\\index.html"',
+  '  exit /b 0',
   ')',
+  'start "" /min powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%~dp0app\\abrir-pendrive.ps1" -Raiz "%~dp0."',
   ''
 ].join('\r\n'));
 
