@@ -175,7 +175,7 @@
 
   // ---------------- Canais e Jogos ----------------
   var GAMES = [['cobrinha', 'Cobrinha Neon', false], ['quebrablocos', 'Quebra-Blocos', true], ['pingpong', 'Pingue-Pongue 2P', true], ['meteoros', 'Chuva de Meteoros', true], ['memoria', 'Memória Brasil', false], ['quiz', 'Quiz Brasil', true], ['velha', 'Jogo da Velha', false], ['corrida', 'Corrida Neon', true],
-    ['frutas', 'Festa das Frutas', true], ['blocos', 'Blocos Encaixe', false], ['penaltis', 'Disputa de Pênaltis', true], ['palavra', 'Palavra Secreta', true], ['capivara', 'Corre Capivara', false]];
+    ['frutas', 'Festa das Frutas', true], ['blocos', 'Blocos Encaixe', true], ['penaltis', 'Disputa de Pênaltis', true], ['palavra', 'Palavra Secreta', true], ['capivara', 'Corre Capivara', true]];
   function canais(m) {
     api('GET', '/api/admin/catalog').then(function (r) {
       var items = r.catalog.items, cats = r.catalog.categories, hr = (r.health && r.health.results) || {}, games = r.games || {};
@@ -240,6 +240,7 @@
         '<div class="box"><h2>Preços e teste grátis</h2>' + f('trialDays', 'Dias de teste grátis', 'number', '', ' min="0" step="1"') + f('promoPrice', 'Preço promocional (fundador) R$', 'number', 'Fica travado para quem comprar dentro das vagas.', ' min="0" step="0.01"') +
           f('promoSlots', 'Vagas no preço promocional', 'number', 'Ex.: 50 primeiros compradores.', ' min="0" step="1"') + f('regularPrice', 'Preço normal R$', 'number', '', ' min="0" step="0.01"') +
           f('planDays', 'Dias por pagamento', 'number', '30 = mensal.', ' min="1" step="1"') + f('referralBonusDays', 'Dias de bônus por indicação', 'number', '', ' min="0" step="1"') +
+          '<label class="f"><span>Lançamentos (Música e Vídeos) só para assinantes?</span><select name="premiumNovidades"><option value="true"' + (s.premiumNovidades !== false ? ' selected' : '') + '>Sim — quem não assina pode liberar 30 min vendo 1 anúncio (recomendado)</option><option value="false"' + (s.premiumNovidades === false ? ' selected' : '') + '>Não — liberado para todos</option></select></label>' +
           '<label class="f"><span>Canais grátis mesmo sem assinatura?</span><select name="freeChannels"><option value="true"' + (s.freeChannels ? ' selected' : '') + '>Sim (recomendado: TV aberta é grátis; você cobra pelos jogos e recursos)</option><option value="false"' + (!s.freeChannels ? ' selected' : '') + '>Não (tudo só para assinantes)</option></select></label></div></div>' +
         '<div class="grid2"><div class="box"><h2>Pix (manual, sem taxa)</h2>' + f('pixKey', 'Sua chave Pix') +
           '<label class="f"><span>Tipo da chave</span><select name="pixKeyType">' + [['cpf', 'CPF'], ['cnpj', 'CNPJ'], ['email', 'E-mail'], ['telefone', 'Celular'], ['aleatoria', 'Chave aleatória']].map(function (t) { return '<option value="' + t[0] + '"' + (s.pixKeyType === t[0] ? ' selected' : '') + '>' + t[1] + '</option>'; }).join('') + '</select></label>' +

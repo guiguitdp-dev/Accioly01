@@ -45,6 +45,7 @@
       '<div class="osd" id="osd">' +
         '<div class="title"><span class="live" id="plabel">AO VIVO</span>' + esc(it.name) + '</div>' +
         '<div class="sub">' + esc(it.desc || '') + '</div>' +
+        zapHint() +
         '<div class="inline">' +
           '<button class="btn ghost focusable" data-a="back">◀ Voltar</button>' +
           '<button class="btn ghost focusable" data-a="prev">▲ Canal anterior</button>' +
@@ -61,6 +62,14 @@
     App.track('play', it.id);
     if (it.type === 'hls') playHls(it);
     else if (it.type === 'youtube') playYoutube(it);
+  }
+
+  // Mostra qual é o canal anterior/próximo (como um guia de TV)
+  function zapHint() {
+    var n = state.list.length;
+    if (n < 2) return '';
+    var prev = state.list[(state.index - 1 + n) % n], next = state.list[(state.index + 1) % n];
+    return '<div class="zap">▲ ' + esc(prev.name) + ' &nbsp;·&nbsp; ▼ ' + esc(next.name) + '</div>';
   }
 
   function setMsg(html) {

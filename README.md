@@ -6,6 +6,21 @@ Funciona em **Android TV / Google TV / TV Box / Fire TV** (instala pelo pendrive
 
 ---
 
+## 📱 Instalar no celular ou na TV Android (direto, sem computador)
+
+Aponte a câmera do celular para o QR Code ou abra o link no celular/TV:
+
+<img src="docs/baixar-apk-qrcode.svg" width="180" alt="QR Code para baixar o APK">
+
+**https://github.com/guiguitdp-dev/Accioly01/releases/download/app-latest/AcciolyPlay.apk**
+
+1. Baixe o arquivo **AcciolyPlay.apk** e toque nele para instalar (o Android vai pedir para **permitir instalar apps desta fonte** → permita).
+2. Abra o **Accioly Play**: ele já funciona **direto no aparelho, sem servidor** (modo dono, tudo liberado).
+3. Para usar com seu servidor (contas, assinaturas): **Conta → 📡 Conectar ao meu servidor**.
+4. Para a busca do YouTube no aparelho: **Conta → Chave do YouTube** (grátis, veja `docs/ANUNCIOS-E-YOUTUBE.md`).
+
+O link sempre aponta para a versão mais nova (atualiza sozinho a cada mudança no projeto).
+
 ## Começar com 1 clique
 
 - **Windows:** dê dois cliques em **`INSTALAR-WINDOWS.bat`** (instala o Node.js se faltar, monta o pendrive, **cria os atalhos na Área de Trabalho**, liga o servidor e abre o Painel do Dono). Para ligar junto com o Windows: **`INICIAR-COM-O-WINDOWS.bat`**.

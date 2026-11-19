@@ -1,6 +1,6 @@
 /* Corre Capivara — corrida infinita: pule as pedras, abaixe dos pássaros e pegue laranjas. */
 GameHub.register({
-  id: 'capivara', name: 'Corre Capivara', emoji: '🦫', color: '#b45309', premium: false, trending: true,
+  id: 'capivara', name: 'Corre Capivara', emoji: '🦫', color: '#b45309', premium: true, trending: true,
   desc: 'A capivara mais tranquila do Brasil virou atleta! Pule, abaixe e junte laranjas.',
   help: 'OK ou ▲ pula (2x = pulo duplo) · ▼ abaixa',
   create: function (api) {

@@ -63,7 +63,9 @@ function seed() {
       adsEnabled: false, adsensePublisherId: '', adsenseBannerSlot: '', adsTestMode: true, adFrequency: 120,
       adsAudience: 'expirados', adsInAndroid: false,
       // AdMob (app Android): ID do app só para o app-ads.txt; blocos de anúncio mudam sem recompilar
-      admobEnabled: false, admobAppId: '', admobInterstitialId: '', admobRewardedId: ''
+      admobEnabled: false, admobAppId: '', admobInterstitialId: '', admobRewardedId: '',
+      // Lançamentos (Música e Vídeos) só para assinantes/teste
+      premiumNovidades: true
     },
     users: [], orders: [], admins: [],
     catalog: loadDefaultCatalog(),
@@ -141,6 +143,7 @@ function publicSettings() {
     pixEnabled: !!s.pixKey, mpEnabled: !!mpToken(), supportWhatsapp: s.supportWhatsapp, announcement: s.announcement,
     heroTitle: s.heroTitle, heroText: s.heroText,
     youtubeEnabled: !!ytKey() || MEDIA_MOCK,
+    premiumNovidades: s.premiumNovidades !== false,
     ads: {
       enabled: !!(s.adsEnabled && /^ca-pub-\d{10,20}$/.test(s.adsensePublisherId || '')), client: s.adsensePublisherId, slot: s.adsenseBannerSlot,
       test: !!s.adsTestMode, frequency: Number(s.adFrequency) || 120, audience: s.adsAudience, android: !!s.adsInAndroid,
@@ -611,7 +614,7 @@ const SETTING_TYPES = {
   productName: 'str', trialDays: 'num', promoPrice: 'num', regularPrice: 'num', promoSlots: 'num', planDays: 'num', freeChannels: 'bool', referralBonusDays: 'num',
   pixKey: 'str', pixKeyType: 'str', pixName: 'str', pixCity: 'str', mpAccessToken: 'secret', supportWhatsapp: 'str', announcement: 'str', heroTitle: 'str', heroText: 'str', publicUrl: 'str',
   youtubeApiKey: 'secret', adsEnabled: 'bool', adsensePublisherId: 'str', adsenseBannerSlot: 'str', adsTestMode: 'bool', adFrequency: 'num', adsAudience: 'str', adsInAndroid: 'bool',
-  admobEnabled: 'bool', admobAppId: 'str', admobInterstitialId: 'str', admobRewardedId: 'str'
+  admobEnabled: 'bool', admobAppId: 'str', admobInterstitialId: 'str', admobRewardedId: 'str', premiumNovidades: 'bool'
 };
 
 route('GET', '/api/admin/settings', (req, res) => {
