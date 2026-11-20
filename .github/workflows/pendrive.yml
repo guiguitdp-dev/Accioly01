@@ -36,12 +36,12 @@ jobs:
       ACCIOLY_WHATSAPP: ${{ vars.ACCIOLY_WHATSAPP }}
       ACCIOLY_SITE: ${{ vars.ACCIOLY_SITE }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: main
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
       - run: npm install --no-save playwright@1.48.2
       - run: npx playwright install --with-deps chromium
       - name: ffmpeg
@@ -57,7 +57,7 @@ jobs:
           cp dist/video/VIDEO-DEMONSTRACAO.mp4 AcciolyPlay-Video.mp4
       - name: Compactar
         run: cd dist/pendrive/AcciolyPlay && zip -qr -9 ../../../AcciolyPlay-Pendrive.zip . && cd - && ls -la AcciolyPlay-Pendrive.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: AcciolyPlay-Pendrive
           path: AcciolyPlay-Pendrive.zip

@@ -21,14 +21,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           sparse-checkout: |
             scripts
             server/lib
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
+      # Mantém viva a chave de assinatura do APK (o GitHub apaga caches sem uso por 7 dias)
+      - uses: actions/cache/restore@v5
+        with:
+          path: ~/.android/debug.keystore
+          key: accioly-assinatura-v1
       - run: node scripts/news.js --out publicar/noticias.json --min 20
       - name: Publicar no ramo noticias-dados
         env:

@@ -22,24 +22,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Sem o Pages ativado, só avisa (em vez de falhar toda vez)
+  verificar:
+    runs-on: ubuntu-latest
+    outputs:
+      ativo: ${{ steps.pages.outputs.ativo }}
+    steps:
+      - id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/pages")
+          if [ "$code" = "200" ]; then echo "ativo=true" >> "$GITHUB_OUTPUT"; else
+            echo "ativo=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Site do iPhone desligado::Para publicar o app para iPhone: GitHub > Settings > Pages > Source: GitHub Actions (uma vez só)."
+          fi
   deploy:
+    needs: verificar
+    if: needs.verificar.outputs.ativo == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Montar o site
         run: |
           mkdir -p _site
           cp -r app/. _site/
           sed -i "s/localMode: 'auto'/localMode: true/" _site/js/config.js
           touch _site/.nojekyll
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
