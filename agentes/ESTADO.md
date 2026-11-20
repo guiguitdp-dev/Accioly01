@@ -9,6 +9,9 @@ Atualizado em: 2026-11-18
 - v1.2: aba Música e Vídeos (YouTube oficial + Música livre/Audius) e AdSense só para não assinantes.
 - v1.3: AdMob no APK (intersticial + premiado, consentimento UMP; IDs de teste até o dono configurar). Dono precisa: chave YouTube API e conta AdSense aprovada (docs/ANUNCIOS-E-YOUTUBE.md).
 
+## Canais (v1.6)
+- Catálogo v3: 71 itens, 64 tocando dentro do app (IDs oficiais confirmados por pesquisa). Novas categorias: Humor e Entretenimento; Rádios em Música/Notícias. Sem ID ainda: Band (@BandTVOficial), Times Brasil, TV Evangelizar.
+
 ## Jogos (v1.5)
 - 17 jogos. Novos de tiro (nostalgia): Esquadrilha 2000 (navinha), Comando Retrô (corre-e-atira), Mira Certeira (pistola sobre trilhos, toque/mouse), Operação 3D (FPS raycasting). Controle na tela no celular.
 - iPhone: app web instalável (GitHub Pages) — dono precisa ativar Settings → Pages → GitHub Actions uma vez.

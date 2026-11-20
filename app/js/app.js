@@ -619,7 +619,8 @@
 
   // Devolve { channelId, live }. O servidor confere se o canal está ao vivo agora (cache de 10 min).
   function resolveYoutube(it) {
-    var fallback = { channelId: it.channelId || null, live: it.live !== false };
+    // Sem servidor/app Android para checar: canais 24h começam ao vivo; os demais pelos vídeos recentes
+    var fallback = { channelId: it.channelId || null, live: it.live === true };
     if ((LOCAL || !S.online) && it.handle && window.AndroidTV && AndroidTV.ytResolve) return nativeYt(it.handle, fallback);
     if (LOCAL || !S.online || !it.handle) return Promise.resolve(fallback);
     return api('GET', '/api/yt/resolve?handle=' + encodeURIComponent(it.handle))
