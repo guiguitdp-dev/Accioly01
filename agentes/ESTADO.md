@@ -15,6 +15,10 @@ Atualizado em: 2026-11-20
 - v1.9: versões públicas (APK, site, pendrive) = vitrine; dono libera no aparelho com o CÓDIGO DO DONO (app/js/dono.js, só o hash fica no config.js; trocar: npm run codigo-dono). Canais: verificador usa o ID oficial (feed do YouTube) → 71/71 OK; sem ID só Band, Times Brasil, TV Evangelizar. APK com chave de assinatura fixa (cache do Actions ou segredo ANDROID_KEYSTORE_B64).
 - Autorun ao conectar é impossível (bloqueado pelos sistemas): pendrive tem autorun.inf só com nome/ícone + "ABRIR ACCIOLY PLAY.html".
 
+## Recursos de TV por assinatura (v2.1)
+- Pesquisa (Claro tv+, Sky+, Samsung TV Plus, Netflix, YouTube TV) → perfis + Kids com PIN (ap_perfis/ap_pin), número do canal + último canal + guia (player.js), multitela (js/multitela.js), timer para desligar, busca única (aba busca), Surpreenda-me, Porque você assistiu; link Samsung TV Plus (catálogo v4).
+- PC: ATUALIZAR.bat (git pull ou ZIP do GitHub, preserva server/data) chamado pelo atalho e pela inicialização do Windows.
+
 ## Visual realista (v2.0)
 - Capas reais: miniatura oficial do último vídeo de cada canal (scripts/capas.js → ramo noticias-dados/capas.json, /api/capas) e foto real de cada jogo (scripts/capturar-jogos.js → app/img/jogos). Seções: Ao vivo agora, Top 10 (TOP_CASA em app.js), Jogos em alta, Para a família. Tema 3D em css/realista.css + js/fx3d.js.
 
@@ -37,7 +41,7 @@ Atualizado em: 2026-11-20
 - 37 itens no catálogo (HLS oficiais, YouTube oficiais e links de apps gratuitos). Primeira verificação real deve rodar no servidor do dono (no Brasil).
 
 ## Qualidade
-- Teste automático: 77/77 passando (notícias, vitrine, código do dono, capas e Top 10) (Pix, 17 jogos, Música e Vídeos, AdSense, AdMob simulado).
+- Teste automático: 86/86 passando (notícias, vitrine, código do dono, capas, Top 10, perfis, busca, guia, multitela) (Pix, 17 jogos, Música e Vídeos, AdSense, AdMob simulado).
 - APK Android TV compila no GitHub Actions (artefato "AcciolyPlay-AndroidTV").
 
 ## Números

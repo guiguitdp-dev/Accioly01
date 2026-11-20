@@ -10,6 +10,10 @@ if /i "%~1"=="admin" set "URL=http://localhost:3000/admin/"
 where node >nul 2>nul
 if errorlevel 1 goto semnode
 
+rem Atualiza sozinho pelo GitHub (rapido se ja estiver em dia; sem internet, segue normal)
+if exist "%~dp0ATUALIZAR.bat" call "%~dp0ATUALIZAR.bat" auto
+if errorlevel 10 call :reiniciar
+
 rem Servidor ja esta ligado?
 powershell -NoProfile -Command "try { $null = Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 -Uri 'http://localhost:3000/health'; exit 0 } catch { exit 1 }"
 if not errorlevel 1 goto abrir
@@ -39,6 +43,11 @@ exit /b 0
 
 :navegador
 start "" "%URL%"
+exit /b 0
+
+:reiniciar
+rem Versao nova: desliga o servidor antigo para ligar de novo ja atualizado
+powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
 exit /b 0
 
 :semnode
