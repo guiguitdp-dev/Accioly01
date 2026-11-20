@@ -132,7 +132,7 @@
     if (Player.isOpen() || GameHub.isOpen() || MediaPlayer.isOpen() || OptionsSheet.isOpen() || S.modalOpen || !root.querySelector('.topbar')) return;
     S.demoShown = true;
     renderHome();
-    openBuy('Seu tempo de demonstração com tudo liberado terminou. Os canais, as notícias e os jogos grátis continuam funcionando.');
+    openBuy('Acabou o tempo com tudo liberado. Os canais, as notícias e os jogos grátis continuam funcionando.');
   }, 20000);
 
   function brandHtml() {
@@ -269,11 +269,11 @@
   function heroSlides() {
     var st = S.settings;
     return [
-      { kicker: 'AO VIVO', title: st.heroTitle || 'Sua TV completa: canais ao vivo, filmes grátis e jogos no controle.', text: st.heroText || 'TV aberta, notícias 24h, esportes, novelas e desenhos — tudo de fontes oficiais, tocando aqui dentro.', c1: '#7c5cff', c2: '#ff7a45' },
-      { kicker: 'NOVIDADE', title: '📰 Notícias do dia a dia', text: 'O que está acontecendo no Brasil e no mundo, atualizado de hora em hora. Ouça o resumo do dia em voz alta ou leia no celular.', c1: '#0ea5e9', c2: '#6366f1', tab: 'noticias', btn: '📰 Ver notícias' },
-      { kicker: 'LANÇAMENTO', title: '🎵 Música e Vídeos', text: 'Busque qualquer música ou clipe, veja o que está em alta no Brasil e toque em sequência. E ainda: música livre sem anúncios.', c1: '#22c55e', c2: '#0ea5e9', tab: 'midia', btn: '🎵 Abrir Música' },
-      { kicker: 'JOGOS EM ALTA', title: '🦫 Corre Capivara, ⚽ Pênaltis e mais', text: '17 jogos para jogar com o controle remoto — sozinho ou em família, com recordes.', c1: '#f59e0b', c2: '#ef4444', tab: 'jogos', btn: '🎮 Ver jogos' },
-      { kicker: 'KIDS', title: '🧸 Cantinho Kids', text: 'Desenhos e jogos para a criançada, tudo num lugar só.', c1: '#ec4899', c2: '#8b5cf6', tab: 'kids', btn: '🧸 Abrir Kids' }
+      { kicker: 'AO VIVO', title: st.heroTitle || 'Sua TV mais divertida: canais ao vivo, notícias e jogos.', text: st.heroText || 'TV aberta, notícias 24h, esportes e desenhos de fontes oficiais e gratuitas. É só escolher e apertar OK.', c1: '#7c5cff', c2: '#ff7a45' },
+      { kicker: 'NOVIDADE', title: '📰 Notícias do dia, de hora em hora', text: 'O que acontece no Brasil e no mundo, sempre atualizado. Ouça o resumo em voz alta ou leia a matéria no celular.', c1: '#0ea5e9', c2: '#6366f1', tab: 'noticias', btn: '📰 Ver as notícias' },
+      { kicker: 'LANÇAMENTO', title: '🎵 Música e Vídeos', text: 'Busque músicas e clipes, veja o que está em alta no Brasil e ouça um atrás do outro. Tem até música livre sem anúncios.', c1: '#22c55e', c2: '#0ea5e9', tab: 'midia', btn: '🎵 Ouvir agora' },
+      { kicker: 'JOGOS EM ALTA', title: '🦫 Corre Capivara, ⚽ Pênaltis e mais 15 jogos', text: 'Jogue com o controle da TV, sozinho ou em família. Tem tiro retrô, quiz, pênaltis e recordes para bater.', c1: '#f59e0b', c2: '#ef4444', tab: 'jogos', btn: '🎮 Jogar agora' },
+      { kicker: 'KIDS', title: '🧸 Cantinho Kids', text: 'Desenhos oficiais e jogos fáceis para a criançada. Tudo num lugar só, sem complicação.', c1: '#ec4899', c2: '#8b5cf6', tab: 'kids', btn: '🧸 Abrir o Kids' }
     ];
   }
   // Imagem real de fundo para cada destaque (capa do canal ao vivo, foto da notícia, tela do jogo)
@@ -307,14 +307,14 @@
 
   // Atalhos para tudo o que o app tem (para ninguém deixar de achar)
   function quickRow() {
-    var q = [['data-tab="noticias"', '📰', 'Notícias do dia', 'Brasil e mundo', '#0ea5e9'],
-      News.canSpeak() ? ['data-act="nbrief"', '🔊', 'Resumo do dia', 'ouça as notícias', '#6366f1'] : null,
-      ['data-tab="tv"', '📡', 'TV ao vivo', 'canais oficiais', '#e11d48'],
-      ['data-tab="midia"', '🎵', 'Música e vídeos', 'busque o que quiser', '#22c55e'],
+    var q = [['data-tab="noticias"', '📰', 'Notícias do dia', 'de hora em hora', '#0ea5e9'],
+      News.canSpeak() ? ['data-act="nbrief"', '🔊', 'Ouvir o resumo', 'notícias em voz alta', '#6366f1'] : null,
+      ['data-tab="tv"', '📡', 'TV ao vivo', 'oficial e grátis', '#e11d48'],
+      ['data-tab="midia"', '🎵', 'Música e vídeos', 'clipes e sucessos', '#22c55e'],
       ['data-tab="jogos"', '🎮', '17 jogos', 'no controle remoto', '#f59e0b'],
-      ['data-tab="kids"', '🧸', 'Kids', 'desenhos e jogos', '#ec4899'],
-      ['data-act="ajustes"', '⚙️', 'Ajustes', 'tela, som, legendas', '#64748b']].filter(Boolean);
-    return '<section class="row"><h2>⚡ Atalhos</h2><div class="track" data-row="atalhos">' + q.map(function (x) {
+      ['data-tab="kids"', '🧸', 'Kids', 'desenhos e joguinhos', '#ec4899'],
+      ['data-act="ajustes"', '⚙️', 'Ajustes', 'letra maior, som', '#64748b']].filter(Boolean);
+    return '<section class="row"><h2>⚡ Atalhos rápidos</h2><div class="track" data-row="atalhos">' + q.map(function (x) {
       return '<button class="tile qk focusable" style="--c:' + x[4] + '" ' + x[0] + '><span class="emoji">' + x[1] + '</span><span class="name">' + x[2] + '</span><span class="sub">' + x[3] + '</span></button>';
     }).join('') + '</div></section>';
   }
@@ -324,13 +324,13 @@
     if (S.briefing && S.tab !== 'noticias') { News.stop(); S.briefing = false; }
     var html = topbar();
     var st = S.settings;
-    if (!S.online && !LOCAL) html += '<div class="banner">Sem conexão com o servidor. Canais e jogos grátis continuam funcionando.</div>';
+    if (!S.online && !LOCAL) html += '<div class="banner">Sem conexão com o servidor agora. Os canais e os jogos grátis continuam funcionando.</div>';
     if (st.announcement) html += '<div class="banner">' + esc(st.announcement) + '</div>';
     if (DEMO && S.tab === 'inicio') html += '<div class="banner demo" data-act="buy">' + (demoLeft() > 0
-      ? '🎁 <b>Demonstração com tudo liberado</b> por mais ' + Math.ceil(demoLeft() / 60000) + ' minutos: jogos premium, música, vídeos e notícias. Gostou? Toque aqui para assinar.'
-      : '⭐ <b>Gostou?</b> Assine o Accioly Play e libere os jogos premium, música e vídeos. Canais, notícias e jogos grátis continuam liberados. Toque aqui.') + '</div>';
+      ? '🎁 <b>Tudo liberado</b> por mais ' + Math.ceil(demoLeft() / 60000) + ' minutos: jogos premium, música, vídeos e notícias. Gostou? Toque aqui e assine.'
+      : '⭐ <b>Gostou?</b> Assine e libere de novo os jogos premium, a música e os vídeos. Canais, notícias e jogos grátis seguem liberados. Toque aqui.') + '</div>';
     if (S.tab === 'inicio' && /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.navigator.standalone && !lsGet('ap_ios_ok', false))
-      html += '<div class="banner" data-act="iosok">📲 Instale no iPhone: toque em <b>Compartilhar</b> (quadrado com seta ⬆️) → <b>Adicionar à Tela de Início</b>. Fica com ícone e tela cheia. (toque aqui para fechar)</div>';
+      html += '<div class="banner" data-act="iosok">📲 Coloque na tela do iPhone: toque em <b>Compartilhar</b> (quadrado com seta ⬆️) e depois em <b>Adicionar à Tela de Início</b>. Abre em tela cheia, como um app. (toque aqui para fechar)</div>';
     var cats = S.catalog.categories;
     var catName = function (id) { var c = cats.filter(function (x) { return x.id === id; })[0]; return c ? c.name : id; };
 
@@ -344,17 +344,17 @@
       html += quickRow();
       var f = favs().map(itemById).filter(Boolean);
       html += row('favs', '★ Meus Favoritos', f);
-      html += row('jalta', '🔥 Jogos em alta', games().filter(function (g) { return g.trending && !g.shooter; }));
-      html += row('tiro', '🔫 Tiro e Ação — nostalgia de fliperama', games().filter(function (g) { return g.shooter; }));
+      html += row('jalta', '🔥 Jogos em alta — é só pegar o controle', games().filter(function (g) { return g.trending && !g.shooter; }));
+      html += row('tiro', '🔫 Tiro retrô — o clima do fliperama na sua TV', games().filter(function (g) { return g.shooter; }));
       html += Ads.banner();
-      html += row('familia', '👨‍👩‍👧 Para assistir em família', familyItems());
+      html += row('familia', '👨‍👩‍👧 Para curtir em família', familyItems());
       html += row('abertos', catName('abertos'), catItems('abertos'));
       html += row('jogos', '🎮 Todos os jogos no controle remoto', games());
       cats.forEach(function (c) { if (c.id !== 'abertos') html += row(c.id, c.name, catItems(c.id)); });
     } else if (S.tab === 'kids') {
-      html += '<section class="hero" style="padding:1.6rem 2.2rem"><h1 style="font-size:2rem">Cantinho Kids 🧸</h1><p style="margin:0">Desenhos e jogos para a criançada, tudo num lugar só.</p></section>';
+      html += '<section class="hero" style="padding:1.6rem 2.2rem"><h1 style="font-size:2rem">Cantinho Kids 🧸</h1><p style="margin:0">Desenhos oficiais e jogos fáceis para a criançada. Tudo num lugar só.</p></section>';
       html += row('infantil', '📺 Desenhos e canais infantis', catItems('infantil'));
-      html += row('kidsgames', '🎮 Jogos para crianças', games().filter(function (g) { return KIDS_GAMES.indexOf(g.id) >= 0; }));
+      html += row('kidsgames', '🎮 Jogos para os pequenos', games().filter(function (g) { return KIDS_GAMES.indexOf(g.id) >= 0; }));
       html += row('educacao', '📚 Aprender brincando', catItems('educacao'));
     } else if (S.tab === 'tv') {
       cats.forEach(function (c) { if (c.id !== 'filmes') html += row(c.id, c.name, catItems(c.id)); });
@@ -364,19 +364,19 @@
       html += '<div id="nrows"><div class="spinner"></div></div>';
     } else if (S.tab === 'filmes') {
       html += row('filmes', catName('filmes'), catItems('filmes'));
-      html += '<p class="note" style="margin:0 var(--safe)">Esses serviços são gratuitos e legais. Ao abrir, você vai para o app/site oficial.</p>';
+      html += '<p class="note" style="margin:0 var(--safe)">Serviços gratuitos e legais. Ao escolher um, abrimos o app ou o site oficial dele.</p>';
     } else if (S.tab === 'jogos') {
       var all = games(), grid = function (id, title, list) {
         if (!list.length) return '';
         rowsIndex[id] = list;
         return '<section class="row"><h2>' + esc(title) + ' <small>' + list.length + '</small></h2><div class="grid">' + list.map(function (g) { return tile(g, id); }).join('') + '</div></section>';
       };
-      html += '<p class="note" style="margin:0 var(--safe) .6rem">🎮 Jogue com o controle remoto, um controle de videogame ou, no celular, com o controle que aparece na tela.</p>';
-      html += grid('jtiro', '🔫 Tiro e Ação', all.filter(function (g) { return g.shooter; }));
+      html += '<p class="note" style="margin:0 var(--safe) .6rem">🎮 Jogue com o controle remoto da TV, com um controle de videogame ou, no celular, pelo controle na tela.</p>';
+      html += grid('jtiro', '🔫 Tiro e Ação retrô', all.filter(function (g) { return g.shooter; }));
       html += grid('jnovos', '🔥 Lançamentos', all.filter(function (g) { return g.trending && !g.shooter; }));
-      html += grid('jclassicos', '🕹️ Clássicos', all.filter(function (g) { return !g.trending && !g.shooter; }));
+      html += grid('jclassicos', '🕹️ Clássicos de sempre', all.filter(function (g) { return !g.trending && !g.shooter; }));
     } else if (S.tab === 'conta') {
-      html += '<div class="inline" style="margin:0 var(--safe) 1rem" data-row="aj"><button class="btn primary focusable" data-act="ajustes">⚙️ Ajustes: visual, tamanho da tela, som e legendas</button></div>';
+      html += '<div class="inline" style="margin:0 var(--safe) 1rem" data-row="aj"><button class="btn primary focusable" data-act="ajustes">⚙️ Ajustes: letra maior, visual, som e legendas</button></div>';
       html += accountHtml();
     }
     root.innerHTML = html;
@@ -448,7 +448,7 @@
   }
   function searchMedia(q) {
     q = String(q || '').trim();
-    if (q.length < 2) return toast('Digite pelo menos 2 letras');
+    if (q.length < 2) return toast('Digite pelo menos 2 letras para buscar');
     S.mediaQuery = q;
     var box = root.querySelector('#mrows');
     box.innerHTML = '<div class="spinner"></div>';
@@ -491,7 +491,7 @@
       if (S.tab === 'noticias' && root.querySelector('#nrows')) drawNews(d);
     }).catch(function () {
       var box = root.querySelector('#nrows');
-      if (box) box.innerHTML = '<p class="note" style="margin:0 var(--safe)">Não foi possível carregar as notícias agora. Confira a internet e tente de novo.</p>' +
+      if (box) box.innerHTML = '<p class="note" style="margin:0 var(--safe)">Não deu para carregar as notícias agora. Confira a internet e tente de novo. Enquanto isso, veja os canais de notícias ao vivo:</p>' +
         '<div class="inline" style="margin:1rem var(--safe)" data-row="nerr"><button class="btn primary focusable" data-act="nrefresh">🔄 Tentar de novo</button></div>' + row('nlive', '📺 Notícias ao vivo agora', catItems('noticias'));
       if (box) bindRoot(box);
     });
@@ -500,13 +500,13 @@
     var box = root.querySelector('#nrows');
     var srcs = {};
     d.sections.forEach(function (s) { s.items.forEach(function (n) { srcs[n.src] = 1; }); });
-    var html = '<div class="newshead"><div><h1>📰 Notícias do dia</h1><p class="note">Brasil e mundo · atualizado ' + esc(News.ago(d.updatedAt)) + ' · ' + d.total + ' notícias de ' + esc(Object.keys(srcs).slice(0, 8).join(', ')) + '</p></div>' +
+    var html = '<div class="newshead"><div><h1>📰 Notícias do dia</h1><p class="note">Brasil e mundo, de hora em hora · atualizado ' + esc(News.ago(d.updatedAt)) + ' · ' + d.total + ' notícias de ' + esc(Object.keys(srcs).slice(0, 8).join(', ')) + '</p></div>' +
       '<div class="inline" data-row="nhead">' + (News.canSpeak() ? '<button class="btn primary focusable" data-act="nbrief">' + (S.briefing ? '⏹ Parar resumo' : '🔊 Ouvir o resumo do dia') + '</button>' : '') +
       '<button class="btn ghost focusable" data-act="nrefresh">🔄 Atualizar</button></div></div>';
     html += row('nlive', '📺 Notícias ao vivo agora', catItems('noticias'));
     html += newsRow('ntop', '⚡ Destaques de agora', d.top);
     d.sections.forEach(function (s) { html += newsRow('n_' + s.id, s.title, s.items); });
-    html += '<p class="note" style="margin:0 var(--safe) 2rem">Títulos e resumos publicados pelos próprios veículos (feeds oficiais). Para a matéria completa, abra no site ou leia no celular pelo QR Code.</p>';
+    html += '<p class="note" style="margin:0 var(--safe) 2rem">Títulos e resumos vêm dos próprios jornais e portais (feeds oficiais). Para ler a matéria completa, abra no site ou aponte o celular para o QR Code.</p>';
     box.innerHTML = html;
     bindRoot(box);
   }
@@ -524,7 +524,7 @@
       '<button class="btn ghost focusable" data-act="nopen">↗ Abrir no site</button>' +
       (i < list.length - 1 ? '<button class="btn ghost focusable" data-act="nnext">Próxima ▶</button>' : '') +
       '<button class="btn ghost focusable" data-act="close">Voltar</button></div>' +
-      '<p class="note">Fonte: ' + esc(n.src) + '. Resumo publicado pelo próprio veículo.</p>', function () { News.stop(); });
+      '<p class="note">Fonte: ' + esc(n.src) + '. Resumo publicado pelo próprio veículo. Para ler tudo, use "Ler no celular".</p>', function () { News.stop(); });
     if (keep) S.lastFocus = keep;
     S.newsCur = { row: rowId, i: i };
     track('news', rowId.replace(/^n_/, ''));
@@ -543,25 +543,25 @@
         S.news = d;
         // Se a pessoa já foi assistir/jogar enquanto carregava, não fala por cima
         if (S.tab !== 'inicio' || Player.isOpen() || GameHub.isOpen() || MediaPlayer.isOpen() || S.modalOpen) return;
-        if (!News.speak(News.briefing(d), briefingDone)) return toast('Este aparelho não tem voz para ler em voz alta.');
-        S.briefing = true; toast('🔊 Lendo as principais notícias do dia… (na aba Notícias dá para parar)');
-      }).catch(function () { toast('Sem notícias agora. Confira a internet.'); });
+        if (!News.speak(News.briefing(d), briefingDone)) return toast('Este aparelho não lê em voz alta, mas você pode ler na tela.');
+        S.briefing = true; toast('🔊 Lendo as principais notícias do dia… Para parar, vá na aba Notícias.');
+      }).catch(function () { toast('Não deu para carregar as notícias. Confira a internet e tente de novo.'); });
     }
     if (act === 'nbrief') {
       if (S.briefing) { News.stop(); S.briefing = false; el.textContent = '🔊 Ouvir o resumo do dia'; return; }
-      if (!S.news || !News.speak(News.briefing(S.news), briefingDone)) return toast('Este aparelho não tem voz para ler em voz alta.');
+      if (!S.news || !News.speak(News.briefing(S.news), briefingDone)) return toast('Este aparelho não lê em voz alta, mas você pode ler na tela.');
       S.briefing = true; el.textContent = '⏹ Parar resumo'; return toast('🔊 Lendo as principais notícias do dia…');
     }
     if (act === 'nrefresh') { var b = root.querySelector('#nrows'); if (b) b.innerHTML = '<div class="spinner"></div>'; return loadNews(true); }
     if (!n) return;
-    if (act === 'nspeak') { if (!News.speak(n.t + '. ' + (n.s || '') + ' Fonte: ' + n.src + '.')) toast('Este aparelho não tem voz para ler em voz alta.'); return; }
+    if (act === 'nspeak') { if (!News.speak(n.t + '. ' + (n.s || '') + ' Fonte: ' + n.src + '.')) toast('Este aparelho não lê em voz alta, mas você pode ler na tela.'); return; }
     if (act === 'nopen') return openExternal(n.u);
     if (act === 'nnext') return openNews(S.newsCur.row, S.newsCur.i + 1);
     if (act === 'nqr') {
       var box = overlay.querySelector('#nqrbox');
       return loadQr().then(function () {
         box.innerHTML = '<div class="nqr"><div class="qr">' + qrSvg(n.u) + '</div><p class="note">Aponte a câmera do celular para ler a matéria completa.</p></div>';
-      }).catch(function () { toast('Não foi possível gerar o QR Code.'); });
+      }).catch(function () { toast('Não deu para mostrar o QR Code agora. Tente "Abrir no site".'); });
     }
   }
 
@@ -585,8 +585,8 @@
 
   function accountHtml() {
     var u = S.user, st = S.settings;
-    if (DEMO) return '<div class="center" style="min-height:auto"><div class="panel"><h1>Demonstração</h1>' +
-      '<p>' + (demoLeft() > 0 ? 'Você ainda tem <b>' + Math.ceil(demoLeft() / 60000) + ' minutos</b> com tudo liberado.' : 'O tempo com tudo liberado terminou. Canais, notícias e jogos grátis continuam funcionando.') + '</p>' +
+    if (DEMO) return '<div class="center" style="min-height:auto"><div class="panel"><h1>Demonstração grátis</h1>' +
+      '<p>' + (demoLeft() > 0 ? 'Você ainda tem <b>' + Math.ceil(demoLeft() / 60000) + ' minutos</b> com tudo liberado. Aproveite!' : 'O tempo com tudo liberado terminou. Canais, notícias e jogos grátis continuam funcionando. Gostou? Assine e libere tudo.') + '</p>' +
       '<div class="inline" data-row="acc"><button class="btn hot focusable" data-act="buy">⭐ Quero assinar</button>' +
       '<button class="btn ghost focusable" data-act="dono">🔑 Sou o dono</button>' + androidBtn() + '</div></div></div>';
     if (LOCAL) return '<div class="center" style="min-height:auto"><form class="panel" id="keyf"><h1>Modo Dono</h1>' +
@@ -595,16 +595,16 @@
       '<div class="inline" data-row="acc"><button type="submit" class="btn primary focusable">Salvar chave</button>' + androidBtn() +
       (CFG.demo === true ? '<button type="button" class="btn ghost focusable" data-act="donosair">🔒 Sair do modo dono</button>' : '') + '</div>' +
       '<p class="note">Como pegar a chave grátis: console.cloud.google.com → ativar "YouTube Data API v3" → Credenciais → Criar chave de API.</p></form></div>';
-    if (!u) return '<div class="center" style="min-height:auto"><div class="panel"><h1>Minha Conta</h1><p>Entre para ver sua assinatura.</p><div class="inline" data-row="acc"><button class="btn primary focusable" data-act="login">Entrar</button></div></div></div>';
+    if (!u) return '<div class="center" style="min-height:auto"><div class="panel"><h1>Minha Conta</h1><p>Entre para ver sua assinatura e seu código de indicação.</p><div class="inline" data-row="acc"><button class="btn primary focusable" data-act="login">Entrar</button></div></div></div>';
     var status = { trial: 'Teste grátis', active: 'Assinante', expired: 'Teste encerrado', blocked: 'Bloqueado' }[u.status] || u.status;
     var refLink = location.origin + '/?ref=' + encodeURIComponent(u.referralCode || '');
     return '<div class="center" style="min-height:auto"><div class="panel"><h1>Olá, ' + esc(u.name.split(' ')[0]) + '!</h1>' +
       '<dl class="kv"><dt>Status</dt><dd>' + esc(status) + '</dd>' +
       (u.status === 'trial' ? '<dt>Teste termina</dt><dd>' + fmtDate(u.trialEndsAt) + ' (' + daysLeft(u.trialEndsAt) + ' dia(s))</dd>' : '') +
       (u.paidUntil ? '<dt>Assinatura até</dt><dd>' + fmtDate(u.paidUntil) + '</dd>' : '') +
-      (u.founder ? '<dt>Plano</dt><dd>Fundador — ' + money(st.promoPrice) + '/mês travado</dd>' : '') +
+      (u.founder ? '<dt>Plano</dt><dd>Fundador — ' + money(st.promoPrice) + '/mês travado enquanto renovar</dd>' : '') +
       '<dt>E-mail</dt><dd>' + esc(u.email) + '</dd>' +
-      '<dt>Indique e ganhe</dt><dd>Cada amigo que assinar com seu código te dá +' + esc(st.referralBonusDays || 7) + ' dias grátis.<br>Seu código: <b>' + esc(u.referralCode) + '</b><br><span class="note">' + esc(refLink) + '</span></dd></dl>' +
+      '<dt>Indique e ganhe</dt><dd>Cada amigo que assinar com seu código vale +' + esc(st.referralBonusDays || 7) + ' dias grátis para você.<br>Seu código: <b>' + esc(u.referralCode) + '</b><br><span class="note">' + esc(refLink) + '</span></dd></dl>' +
       '<div class="inline" data-row="acc">' +
         '<button class="btn hot focusable" data-act="paywall">' + (u.status === 'active' ? 'Renovar assinatura' : 'Assinar agora') + '</button>' +
         (st.supportWhatsapp ? '<button class="btn ghost focusable" data-act="support">💬 Suporte no WhatsApp</button>' : '') +
@@ -626,20 +626,20 @@
     var used = st.promoSlots - st.promoRemaining;
     return '<div style="margin:1rem 0 1.2rem"><b>🔥 Preço de fundador: ' + money(st.promoPrice) + '/mês</b> <span class="strike">' + money(st.regularPrice) + '</span>' +
       '<div class="meter"><i style="width:' + Math.round(used / st.promoSlots * 100) + '%"></i></div>' +
-      '<span class="note">Restam ' + st.promoRemaining + ' de ' + st.promoSlots + ' vagas com esse preço. Depois fica ' + money(st.regularPrice) + '/mês.</span></div>';
+      '<span class="note">Restam ' + st.promoRemaining + ' de ' + st.promoSlots + ' vagas com esse preço, travado enquanto você renovar. Depois fica ' + money(st.regularPrice) + '/mês.</span></div>';
   }
 
   function renderWelcome() {
     var st = S.settings;
     root.innerHTML = '<div class="center"><div class="panel">' +
       '<div class="brand" style="margin-bottom:1rem">' + brandHtml() + '</div>' +
-      '<h1>TV aberta, canais grátis, filmes e jogos — tudo no controle remoto.</h1>' +
-      '<p>Funciona na Smart TV, TV Box, PC e celular. Teste grátis por <b>' + st.trialDays + ' dias</b>, sem cartão.</p>' +
+      '<h1>Sua TV mais divertida: canais ao vivo, notícias e 17 jogos.</h1>' +
+      '<p>Tudo no controle remoto, na Smart TV, TV Box, computador e celular. Experimente <b>' + st.trialDays + ' dias grátis</b>, sem cartão.</p>' +
       promoHtml() +
       '<div class="stack" data-row="w">' +
         '<button class="btn primary focusable" data-act="register">Testar grátis por ' + st.trialDays + ' dias</button>' +
         '<button class="btn ghost focusable" data-act="login">Já tenho conta</button>' + androidBtn() +
-      '</div><p class="note" style="margin-top:1.2rem">Só usamos fontes oficiais e legais. Canais pagos exigem assinatura nos apps oficiais.</p></div></div>';
+      '</div><p class="note" style="margin-top:1.2rem">✅ 100% legal: só fontes oficiais e gratuitas. Canais pagos continuam só nos apps oficiais de cada um.</p></div></div>';
     bindRoot();
     Input.focus(root.querySelector('.focusable'));
   }
@@ -665,7 +665,7 @@
       var err = root.querySelector('#aerr'); err.textContent = '';
       api('POST', reg ? '/api/auth/register' : '/api/auth/login', data).then(function (r) {
         S.token = r.token; lsSet('ap_token', r.token); S.user = r.user;
-        toast(reg ? '🎉 Conta criada! Aproveite seu teste grátis.' : 'Bem-vindo de volta!');
+        toast(reg ? '🎉 Conta criada! Seu teste grátis já começou. Bom divertimento!' : 'Que bom ter você de volta! 😊');
         S.tab = 'inicio'; renderHome();
       }).catch(function (e2) { err.textContent = e2.message; });
     });
@@ -702,7 +702,7 @@
 
   function openDetail(it) {
     openModal('<h2>' + esc(it.name) + '</h2><p>' + esc(it.desc || '') + '</p>' +
-      '<p class="note">Vai abrir o site/app oficial. Se pedir login, o cadastro é gratuito.</p>' +
+      '<p class="note">Vamos abrir o app ou o site oficial, grátis e legal. Se pedir cadastro, ele é gratuito.</p>' +
       '<div class="inline" style="margin-top:1rem" data-row="d">' +
       '<button class="btn primary focusable" data-act="openlink" data-url="' + esc(it.url) + '" data-pkg="' + esc(it.android || '') + '">↗ Abrir ' + esc(it.name) + '</button>' +
       '<button class="btn ghost focusable" data-act="fav" data-id="' + esc(it.id) + '">' + (isFav(it.id) ? '★ Favorito' : '☆ Favoritar') + '</button>' +
@@ -714,7 +714,7 @@
     track('open', url);
     if (window.AndroidTV && pkg && AndroidTV.openApp) { AndroidTV.openApp(pkg, url); return; }
     if (window.AndroidTV && AndroidTV.openUrl) { AndroidTV.openUrl(url); return; }
-    toast('Abrindo app oficial…');
+    toast('Abrindo o app oficial…');
     var w = null;
     try { w = window.open(url, '_blank', 'noopener'); } catch (e) {}
     if (!w) location.href = url;
@@ -732,11 +732,11 @@
     var st = S.settings, links = buyLinks();
     openModal('<h2>Gostou do ' + esc(st.productName) + '? ⭐</h2>' +
       (reason ? '<p>' + esc(reason) + '</p>' : '') +
-      '<p>TV ao vivo de fontes oficiais, notícias do dia, 17 jogos no controle remoto, música e vídeos — tudo num lugar só, na TV, no computador e no celular.</p>' +
+      '<p>Assine e tenha tudo liberado: canais ao vivo de fontes oficiais, notícias do dia, 17 jogos no controle remoto, música e vídeos. Na TV, no computador e no celular.</p>' +
       '<div class="price">' + money(st.promoPrice) + ' <small>/ mês</small></div>' +
-      '<p class="note">Preço de fundador para os ' + st.promoSlots + ' primeiros assinantes, enquanto houver vagas (confirme as vagas ao assinar). Depois, ' + money(st.regularPrice) + '/mês.</p>' +
+      '<p class="note">Preço de fundador para os ' + st.promoSlots + ' primeiros assinantes, enquanto houver vagas (confirme as vagas ao assinar). Depois, ' + money(st.regularPrice) + '/mês. Sem fidelidade.</p>' +
       (links.length ? '<div class="buyqrs" id="buyqrs">' + links.map(function (l, i) { return '<div class="buyqr"><div class="qr" id="bq' + i + '"></div><span>' + esc(l.note) + '</span></div>'; }).join('') + '</div>'
-        : '<p class="note">Para assinar, fale com quem te mostrou o Accioly Play.</p>') +
+        : '<p class="note">Para assinar, é só falar com quem te mostrou o Accioly Play. 😊</p>') +
       '<div class="inline" data-row="buy">' + links.map(function (l) { return '<button class="btn primary focusable" data-act="openlink" data-url="' + esc(l.url) + '">' + l.label + '</button>'; }).join('') +
       '<button class="btn ghost focusable" data-act="close">Continuar vendo</button></div>' +
       '<div class="inline" style="margin-top:.4rem" data-row="buy2"><button class="btn ghost focusable small" data-act="dono">🔑 Sou o dono</button></div>');
@@ -762,7 +762,7 @@
         return;
       }
       S.donoFails = (S.donoFails || 0) + 1; S.donoFailAt = Date.now();
-      toast(CFG.donoHash ? 'Código incorreto.' : 'Esta versão não tem código do dono.');
+      toast(CFG.donoHash ? 'Código incorreto. Confira e tente de novo.' : 'Esta versão não tem código do dono.');
     });
   }
 
@@ -773,18 +773,18 @@
     if (!S.user) { renderAuth('register'); return; }
     var st = S.settings, promo = st.promoRemaining > 0 || S.user.founder;
     var price = promo ? st.promoPrice : st.regularPrice;
-    openModal('<h2>Assine o ' + esc(st.productName) + '</h2>' +
-      '<p>' + esc(reason || 'Libere todos os jogos premium e continue com tudo depois do teste.') + '</p>' +
+    openModal('<h2>Assine o ' + esc(st.productName) + ' ⭐</h2>' +
+      '<p>' + esc(reason || 'Continue com tudo depois do teste: canais, notícias, música, vídeos e todos os jogos premium.') + '</p>' +
       '<div class="price">' + money(price) + ' <small>/ ' + st.planDays + ' dias</small></div>' +
-      (S.user.founder ? '<p class="note">Você é fundador: seu preço especial fica travado.</p>' : promoHtml()) +
+      (S.user.founder ? '<p class="note">Você é fundador: seu preço especial fica travado enquanto renovar. 💛</p>' : promoHtml()) +
       '<div id="paybox"><div class="inline" data-row="pay">' +
         (st.pixEnabled ? '<button class="btn primary focusable" data-act="pix">Pagar com Pix</button>' : '') +
         (st.mpEnabled ? '<button class="btn ghost focusable" data-act="mp">Cartão ou Pix (Mercado Pago)</button>' : '') +
         (game && Ads.rewardedAvailable() ? '<button class="btn hot focusable" data-act="reward">🎬 Ver 1 anúncio e jogar 30 min</button>' : '') +
         (st.supportWhatsapp ? '<button class="btn ghost focusable" data-act="support">💬 Falar no WhatsApp</button>' : '') +
         '<button class="btn ghost focusable" data-act="close">Agora não</button></div>' +
-        '<p class="note">Assinantes: todos os jogos liberados e <b>sem anúncios</b>.</p>' +
-        (!st.pixEnabled && !st.mpEnabled ? '<p class="note">Pagamento ainda não configurado pelo dono. Fale com o suporte.</p>' : '') +
+        '<p class="note">Assinante tem todos os jogos liberados e <b>nenhum anúncio</b>. Sem fidelidade: para cancelar, é só não renovar.</p>' +
+        (!st.pixEnabled && !st.mpEnabled ? '<p class="note">O pagamento ainda não foi configurado. Fale com o suporte.</p>' : '') +
       '</div>');
   }
 
@@ -825,7 +825,7 @@
         var st = overlay.querySelector('#paystatus');
         if (r.order.status === 'pago') {
           clearInterval(S.poll);
-          refreshMe().then(function () { closeModal(); toast('🎉 Pagamento confirmado! Assinatura ativa.'); renderHome(); });
+          refreshMe().then(function () { closeModal(); toast('🎉 Pagamento confirmado! Sua assinatura está ativa. Obrigado!'); renderHome(); });
         } else if (st && r.order.status === 'aguardando_confirmacao') st.textContent = 'Recebemos seu aviso! Confirmando o pagamento…';
         else if (st && r.order.status === 'recusado') st.textContent = 'Pagamento não identificado. Fale com o suporte.';
       }).catch(function () {});
@@ -874,9 +874,9 @@
     if (act === 'reward') {
       var g = S.rewardGame;
       return Ads.rewarded('premium-' + (g && g.id), function () {
-        unlock(g.id); closeModal(); toast('🎉 Liberado por 30 minutos!');
+        unlock(g.id); closeModal(); toast('🎉 Liberado por 30 minutos. Divirta-se!');
         if (g.kind === 'game') startGame(g, 'jogos');
-      }, function () { toast('Nenhum anúncio disponível agora. Tente mais tarde ou assine.'); });
+      }, function () { toast('Nenhum anúncio disponível agora. Tente daqui a pouco ou assine para jogar à vontade.'); });
     }
     if (act === 'mp') return checkout('mp');
     if (act === 'openlink') return openExternal(el.getAttribute('data-url'), el.getAttribute('data-pkg'));
@@ -890,7 +890,7 @@
     if (act === 'paid') {
       api('POST', '/api/orders/' + el.getAttribute('data-id') + '/notify').then(function () {
         var s = overlay.querySelector('#paystatus'); if (s) s.textContent = 'Recebemos seu aviso! Assim que o pagamento cair, liberamos (normalmente em minutos).';
-        toast('Aviso enviado ao dono ✅');
+        toast('Aviso enviado! Já vamos conferir ✅');
       }).catch(function (e) { toast(e.message); });
       return;
     }
@@ -909,16 +909,16 @@
     if (!it) return;
     var acc = access();
     if (it.kind === 'game') {
-      if (it.premium && !acc.premium && !unlocked(it.id)) return openPaywall(S.user && S.user.status === 'expired' ? 'Seu teste terminou. Assine para continuar jogando os jogos premium.' : '"' + it.name + '" é um jogo premium.', it);
+      if (it.premium && !acc.premium && !unlocked(it.id)) return openPaywall(S.user && S.user.status === 'expired' ? 'Seu teste terminou. Assine e continue jogando todos os jogos premium.' : '"' + it.name + '" é um jogo premium, liberado para assinantes.', it);
       return startGame(it, rowId);
     }
     if (it.kind === 'yt' || it.kind === 'audio') {
-      if (!acc.tv) return openPaywall('Seu teste terminou. Assine para continuar.');
+      if (!acc.tv) return openPaywall('Seu teste terminou. Assine para continuar com tudo.');
       if (S.settings.premiumNovidades !== false && !acc.premium && !unlocked('midia'))
-        return openPaywall('🎵 Música e Vídeos é um lançamento exclusivo para assinantes.', { id: 'midia', name: 'Música e Vídeos' });
+        return openPaywall('🎵 Música e Vídeos é exclusivo para assinantes. Assine e ouça à vontade.', { id: 'midia', name: 'Música e Vídeos' });
       return MediaPlayer.open(list.length ? list : [it], Math.max(0, list.indexOf(it)));
     }
-    if (!acc.tv) return openPaywall('Seu teste terminou. Assine para continuar assistindo.');
+    if (!acc.tv) return openPaywall('Seu teste terminou. Assine para continuar assistindo aos canais.');
     pushRecent(it.id);
     if (it.type === 'link') return openDetail(it);
     var playable = list.filter(function (x) { return x.kind !== 'game' && x.type !== 'link'; });
