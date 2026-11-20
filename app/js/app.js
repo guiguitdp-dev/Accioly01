@@ -5,13 +5,15 @@
   var CFG = window.APP_CONFIG || {};
   var isFile = location.protocol === 'file:';
   var API = (CFG.serverUrl || '').replace(/\/$/, '');
-  var LOCAL = CFG.localMode === true || (CFG.localMode === 'auto' && isFile && !API);
+  // Aberto num site só de arquivos (GitHub Pages, raw.githack...): sem servidor, funciona como a vitrine
+  var STATIC_HOST = !isFile && !API && /(^|\.)github\.io$|(^|\.)githack\.com$|(^|\.)statically\.io$/.test(location.hostname);
+  var LOCAL = CFG.localMode === true || (CFG.localMode === 'auto' && (isFile || STATIC_HOST) && !API);
   // Vitrine (pendrive/APK de demonstração): acesso total por alguns minutos, depois convite para assinar
   // Nas versões públicas o dono libera tudo NO SEU aparelho com o código secreto (js/dono.js)
   var DONO_OK = (function () {
     try { var c = JSON.parse(localStorage.getItem('ap_dono_code') || 'null'); return !!(c && CFG.donoHash && window.Dono && Dono.hash(c) === CFG.donoHash); } catch (e) { return false; }
   })();
-  var DEMO = LOCAL && CFG.demo === true && !DONO_OK;
+  var DEMO = LOCAL && (CFG.demo === true || STATIC_HOST) && !DONO_OK;
   var root = document.getElementById('root');
   var overlay = document.getElementById('overlay');
 
@@ -768,7 +770,7 @@
       '<p>' + (window.AndroidTV ? 'App funcionando direto neste aparelho, sem servidor.' : 'Versão do pendrive.') + ' Tudo liberado, sem login. Para vender para clientes, use o servidor (veja o LEIA-ME).</p>' +
       '<label class="field"><span>Chave do YouTube (opcional — libera busca e "em alta" na aba Música)</span><input class="focusable" name="ytkey" type="text" autocomplete="off" placeholder="AIza..." value="' + esc(LocalMedia.hasKey() ? '••••••••' : '') + '"></label>' +
       '<div class="inline" data-row="acc"><button type="submit" class="btn primary focusable">Salvar chave</button>' + androidBtn() +
-      (CFG.demo === true ? '<button type="button" class="btn ghost focusable" data-act="donosair">🔒 Sair do modo dono</button>' : '') + '</div>' +
+      (CFG.demo === true || STATIC_HOST ? '<button type="button" class="btn ghost focusable" data-act="donosair">🔒 Sair do modo dono</button>' : '') + '</div>' +
       '<p class="note">Como pegar a chave grátis: console.cloud.google.com → ativar "YouTube Data API v3" → Credenciais → Criar chave de API.</p></form></div>';
     if (!u) return '<div class="center" style="min-height:auto"><div class="panel"><h1>Minha Conta</h1><p>Entre para ver sua assinatura e seu código de indicação.</p><div class="inline" data-row="acc"><button class="btn primary focusable" data-act="login">Entrar</button></div></div></div>';
     var status = { trial: 'Teste grátis', active: 'Assinante', expired: 'Teste encerrado', blocked: 'Bloqueado' }[u.status] || u.status;
