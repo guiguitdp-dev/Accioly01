@@ -307,6 +307,23 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
     await vt.locator('.tile[data-id=quiz]').first().click();
     await vt.waitForSelector('.modal .buyqrs');
     ok('canais e jogos grátis continuam liberados na vitrine', (await vt.locator('.tile[data-id=cobrinha] .lock').count()) === 0);
+    // Código do dono: libera tudo só no aparelho de quem sabe o código
+    const Dono = require('../app/js/dono.js');
+    const cfgFile = path.join(vdir, 'app', 'js', 'config.js');
+    fs.writeFileSync(cfgFile, fs.readFileSync(cfgFile, 'utf8').replace(/"donoHash": "[0-9a-f]*"/, '"donoHash": "' + Dono.hash('TESTE-1234-ABCD') + '"'));
+    await vt.reload();
+    await vt.waitForSelector('.topbar');
+    await vt.keyboard.press('Escape');
+    await vt.click('[data-act=buy]');
+    await vt.click('.modal [data-act=dono]');
+    await vt.fill('#donof [name=codigo]', 'errado-123456');
+    await vt.click('#donof [type=submit]');
+    await vt.waitForTimeout(300);
+    ok('código do dono errado não libera', (await vt.locator('#demopill').count()) === 1);
+    await vt.fill('#donof [name=codigo]', 'teste 1234 abcd');
+    await Promise.all([vt.waitForEvent('load'), vt.click('#donof [type=submit]')]);
+    await vt.waitForSelector('.topbar');
+    ok('código do dono certo libera tudo neste aparelho', await vt.isVisible('text=Modo Dono') && (await vt.locator('.tile[data-id=quiz] .lock').count()) === 0);
     await vt.close();
 
     console.log('Todos os jogos (controle remoto aleatório):');

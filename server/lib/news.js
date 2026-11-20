@@ -78,7 +78,9 @@ function stripTags(html) {
   return String(html || '')
     .replace(/<(script|style|figure|figcaption)\b[\s\S]*?<\/\1>/gi, ' ')
     .replace(/<br\s*\/?>|<\/p>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ');
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    // Só remove o que parece tag de verdade ("Selic < 10% e IPCA > 4%" continua inteiro)
+    .replace(/<\/?[a-z][a-z0-9:-]*(\s[^<>]*)?\/?>/gi, ' ');
 }
 function clean(s) {
   // Alguns feeds mandam o HTML "escapado" (&lt;p&gt;): decodifica, tira as tags e decodifica de novo
@@ -111,6 +113,20 @@ function short(t, max) {
   const sp = cut.lastIndexOf(' ');
   return cut.slice(0, sp > max * 0.6 ? sp : max).replace(/[,;:.\s-]+$/, '') + '…';
 }
+// Datas em português ("Qui, 20 Nov 2026 10:00:00 BRT", "20 Out 2026") viram inglês para o Date.parse
+const MESES = { jan: 'Jan', fev: 'Feb', mar: 'Mar', abr: 'Apr', mai: 'May', jun: 'Jun', jul: 'Jul', ago: 'Aug', set: 'Sep', out: 'Oct', nov: 'Nov', dez: 'Dec' };
+function parseDate(t) {
+  t = String(t || '').trim();
+  if (!t) return NaN;
+  let d = Date.parse(t);
+  if (!isNaN(d)) return d;
+  const en = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/^(seg|ter|qua|qui|sex|sab|dom)[a-z]*\.?,?\s*/i, '')
+    .replace(/\b(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-z]*\.?/gi, (m, k) => MESES[k.toLowerCase()])
+    .replace(/\bBRST\b/, '-0200').replace(/\b(BRT|BRA)\b/, '-0300');
+  d = Date.parse(en);
+  return d;
+}
 function goodUrl(u) { return /^https?:\/\/[^\s"'<>]+$/i.test(u || '') ? u.replace(/^http:\/\//i, 'https://') : ''; }
 
 function parseFeed(xml, source) {
@@ -126,7 +142,7 @@ function parseFeed(xml, source) {
     const rawDesc = tag(b, ['description', 'summary', 'content:encoded', 'content']);
     let summary = short(clean(rawDesc), 300);
     if (summary && summary.toLowerCase().indexOf(title.toLowerCase().slice(0, 40)) === 0 && summary.length < title.length + 15) summary = '';
-    const when = Date.parse(clean(tag(b, ['pubDate', 'dc:date', 'published', 'updated'])));
+    const when = parseDate(clean(tag(b, ['pubDate', 'dc:date', 'published', 'updated'])));
     let img = attr(b, 'media:content', 'url', /medium=["']image|type=["']image|url=["'][^"']+\.(jpe?g|png|webp)/i) ||
       attr(b, 'media:thumbnail', 'url') || attr(b, 'enclosure', 'url', /type=["']image/i);
     if (!img) { const m = /<img\b[^>]*src=["']([^"']+)["']/i.exec(decode(cdata(rawDesc + tag(b, ['content:encoded'])))); if (m) img = m[1]; }
@@ -145,7 +161,8 @@ async function fetchText(url, ms) {
     const buf = Buffer.from(await r.arrayBuffer());
     const head = buf.subarray(0, 300).toString('latin1');
     const cs = ((/encoding=["']([\w-]+)["']/i.exec(head) || [])[1] || (/charset=([\w-]+)/i.exec(r.headers.get('content-type') || '') || [])[1] || 'utf-8').toLowerCase();
-    if (/8859-1|latin|1252/.test(cs)) return buf.toString('latin1');
+    // windows-1252 é o "latin1" real dos sites (aspas curvas, travessão, €)
+    if (/8859-1|latin|1252/.test(cs)) { try { return new TextDecoder('windows-1252').decode(buf); } catch (e) { return buf.toString('latin1'); } }
     return buf.toString('utf8');
   } finally { clearTimeout(timer); }
 }
@@ -171,7 +188,8 @@ async function collect(opts) {
     let all = [];
     for (const r of results) if (r.sec === sec.id) {
       if (!r.items.length) errors[r.src + ' (' + sec.id + ')'] = errors[r.src + ' (' + sec.id + ')'] || 'sem itens';
-      r.items.forEach((it, i) => { if (!it.d || it.d > now + 3600e3) it.d = now - 3600e3 * 6 - i * 60e3; all.push(it); });
+      // Sem data confiável: descarta (não dá para saber se é de hoje); data no futuro vira "agora"
+      r.items.forEach((it) => { if (!it.d) return; if (it.d > now) it.d = Math.min(it.d, now); all.push(it); });
     }
     all.sort((a, b) => b.d - a.d);
     const perSrc = {};
@@ -205,13 +223,18 @@ function mock() {
 }
 
 let memo = null;
+let memoAt = 0;
 let pending = null;
-// Cache de 15 minutos no servidor (todo mundo recebe a mesma lista; os sites não são sobrecarregados)
+// Cache de 15 minutos no servidor (todo mundo recebe a mesma lista; os sites não são sobrecarregados).
+// Quando vence, responde na hora com a lista guardada e atualiza por trás (ninguém espera os sites).
 function get(ttlMs) {
-  if (memo && Date.now() - memo.updatedAt < (ttlMs || 15 * 60e3)) return Promise.resolve(memo);
-  if (pending) return pending;
-  pending = collect().then((r) => { if (r.total >= 5 || !memo) memo = r; return memo; }).finally(() => { pending = null; });
-  return pending;
+  const fresh = memo && Date.now() - memoAt < (ttlMs || 15 * 60e3);
+  if (!fresh && !pending) {
+    pending = collect().then((r) => { if (r.total >= 5 || !memo) memo = r; memoAt = Date.now(); return memo; })
+      .catch((e) => { memoAt = Date.now(); if (!memo) throw e; return memo; })
+      .finally(() => { pending = null; });
+  }
+  return memo ? Promise.resolve(memo) : pending;
 }
 
-module.exports = { SECTIONS, parseFeed, collect, get, mock, clean };
+module.exports = { SECTIONS, parseFeed, parseDate, collect, get, mock, clean };

@@ -32,7 +32,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      GH_TOKEN: ${{ github.token }}
       ACCIOLY_WHATSAPP: ${{ vars.ACCIOLY_WHATSAPP }}
       ACCIOLY_SITE: ${{ vars.ACCIOLY_SITE }}
     steps:
@@ -46,10 +45,14 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: ffmpeg
         run: command -v ffmpeg || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg)
-      - name: Baixar o APK vitrine
-        run: gh release download app-latest -p 'AcciolyPlay-Vitrine.apk' -D dist/apk || echo "Sem APK vitrine ainda"
+      - name: Baixar o APK (vitrine)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download app-latest -p 'AcciolyPlay.apk' -D dist/apk || echo "Sem APK ainda"
       - name: Montar o pendrive
-        run: node scripts/build-pendrive.js --com-video --minutos "${{ inputs.minutos || '30' }}"
+        env:
+          MINUTOS: ${{ inputs.minutos }}
+        run: node scripts/build-pendrive.js --com-video --minutos "${MINUTOS:-30}"
       - name: Gravar o vídeo de demonstração
         run: |
           node scripts/demo-video.js dist/pendrive/AcciolyPlay dist/video/VIDEO-DEMONSTRACAO.mp4
@@ -62,4 +65,6 @@ jobs:
           name: AcciolyPlay-Pendrive
           path: AcciolyPlay-Pendrive.zip
       - name: Publicar no link fixo
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: gh release upload app-latest AcciolyPlay-Pendrive.zip AcciolyPlay-Video.mp4 --clobber

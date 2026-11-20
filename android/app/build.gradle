@@ -9,13 +9,15 @@ def appUrl = (project.findProperty('appUrl') ?: '').toString().replace('"', '')
 // Build com o seu: gradle assembleDebug -PadmobAppId=ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY
 def admobAppId = (project.findProperty('admobAppId') ?: 'ca-app-pub-3940256099942544~3347511713').toString().trim()
 
-// Vitrine (APK de demonstração para mostrar a outras pessoas): -Pvitrine=true
-// com o WhatsApp e o site de vendas: -PbuyWhatsapp=5511999999999 -PbuySite=https://seusite.com.br
-def vitrine = (project.findProperty('vitrine') ?: 'false').toString() == 'true'
+// O APK é a VITRINE: demonstração com tempo e convite para assinar; o dono libera tudo no aparelho
+// com o código do dono (Conta > Sou o dono). WhatsApp e site de vendas no convite:
+//   -PbuyWhatsapp=5511999999999 -PbuySite=https://seusite.com.br
+// APK só seu, já com tudo liberado (NÃO publique): -Pdono=true
+def vitrine = (project.findProperty('dono') ?: 'false').toString() != 'true'
 def buyWhatsapp = (project.findProperty('buyWhatsapp') ?: '').toString().replaceAll('[^0-9]', '')
 def buySite = (project.findProperty('buySite') ?: '').toString().replaceAll("['\"\\\\\\s]", '')
 
-// O app web (pasta ../app) vai DENTRO do APK, em modo dono (tudo liberado, sem servidor)
+// O app web (pasta ../app) vai DENTRO do APK (funciona sem servidor)
 def webAssetsDir = layout.buildDirectory.dir('generated/webapp')
 tasks.register('copyWebApp', Copy) {
     inputs.property('vitrine', vitrine)

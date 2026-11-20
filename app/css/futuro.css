@@ -261,3 +261,6 @@ html[data-perf="leve"] .tile.ntile .nimg { opacity: .75; }
 .tile.qk .sub { position: relative; z-index: 1; font-size: .78rem; color: #c7d6ef; }
 .tile.qk .emoji { top: .7rem; bottom: auto; font-size: 2rem; }
 @media (max-width: 700px) { .tile.qk { width: 9.5rem; height: 6rem; } }
+
+/* Celular: placar não fica embaixo do botão de pausa */
+.game-screen.touch .game-hud { padding-right: calc(max(12px, env(safe-area-inset-right)) + 66px); padding-top: max(.9rem, env(safe-area-inset-top)); }

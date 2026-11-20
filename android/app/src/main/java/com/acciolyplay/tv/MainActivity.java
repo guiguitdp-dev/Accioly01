@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
@@ -43,6 +44,8 @@ public class MainActivity extends Activity {
     /** Voz do aparelho para "ouvir a notícia" (a WebView não tem voz própria). */
     private TextToSpeech tts;
     private boolean ttsReady = false;
+    /** Texto pedido enquanto a voz ainda está iniciando (fala assim que ficar pronta). */
+    private String ttsPending = null;
 
 
     private WebView web;
@@ -296,26 +299,50 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void speak(final String text) {
             runOnUiThread(() -> {
+                ttsPending = text;
                 if (tts == null) {
                     tts = new TextToSpeech(MainActivity.this, status -> {
-                        ttsReady = status == TextToSpeech.SUCCESS;
-                        if (ttsReady) {
-                            tts.setLanguage(new Locale("pt", "BR"));
-                            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "noticia");
-                        } else {
+                        if (status != TextToSpeech.SUCCESS) {
+                            ttsPending = null;
+                            ttsDone();
                             Toast.makeText(MainActivity.this, "Este aparelho não tem voz instalada.", Toast.LENGTH_LONG).show();
+                            return;
                         }
+                        int lang = tts.setLanguage(new Locale("pt", "BR"));
+                        if (lang < 0) lang = tts.setLanguage(new Locale("pt"));
+                        if (lang < 0) Toast.makeText(MainActivity.this, "Instale a voz em português nas configurações do aparelho.", Toast.LENGTH_LONG).show();
+                        tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                            @Override public void onStart(String id) { }
+                            @Override public void onDone(String id) { ttsDone(); }
+                            @Override public void onError(String id) { ttsDone(); }
+                        });
+                        ttsReady = true;
+                        speakPending();
                     });
                 } else if (ttsReady) {
-                    tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "noticia");
+                    speakPending();
                 }
             });
         }
 
         @JavascriptInterface
         public void stopSpeak() {
-            runOnUiThread(() -> { if (tts != null) tts.stop(); });
+            runOnUiThread(() -> {
+                ttsPending = null;
+                if (tts != null) tts.stop();
+            });
         }
+    }
+
+    private void speakPending() {
+        if (tts == null || ttsPending == null) return;
+        tts.speak(ttsPending, TextToSpeech.QUEUE_FLUSH, null, "noticia");
+        ttsPending = null;
+    }
+
+    /** Avisa o app web que a leitura terminou (o botão volta a "Ouvir"). */
+    private void ttsDone() {
+        runOnUiThread(() -> web.evaluateJavascript("window.__ttsDone && window.__ttsDone()", null));
     }
 
     @Override
@@ -363,6 +390,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
+        ttsPending = null;
         if (tts != null) tts.stop();
         web.onPause();
     }

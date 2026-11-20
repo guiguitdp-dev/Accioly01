@@ -15,7 +15,8 @@ Aponte a câmera do celular para o QR Code ou abra o link no celular/TV:
 **https://github.com/guiguitdp-dev/Accioly01/releases/download/app-latest/AcciolyPlay.apk**
 
 1. Baixe o arquivo **AcciolyPlay.apk** e toque nele para instalar (o Android vai pedir para **permitir instalar apps desta fonte** → permita).
-2. Abra o **Accioly Play**: ele já funciona **direto no aparelho, sem servidor** (modo dono, tudo liberado).
+2. Abra o **Accioly Play**: ele já funciona **direto no aparelho, sem servidor**, em modo **demonstração** (30 min com tudo liberado e depois convite para assinar).
+   - **Dono:** em **Conta → 🔑 Sou o dono**, digite o **código do dono** e tudo fica liberado naquele aparelho. Trocar o código: `npm run codigo-dono`.
 3. Para usar com seu servidor (contas, assinaturas): **Conta → 📡 Conectar ao meu servidor**.
 4. Para a busca do YouTube no aparelho: **Conta → Chave do YouTube** (grátis, veja `docs/ANUNCIOS-E-YOUTUBE.md`).
 
@@ -31,7 +32,7 @@ Vídeo para divulgar: **https://github.com/guiguitdp-dev/Accioly01/releases/down
 
 O iPhone não instala APK. Use o app web (mesmo app, mesma tela):
 
-1. No iPhone, abra no **Safari**: **https://guiguitdp-dev.github.io/Accioly01/**
+1. No iPhone, abra no **Safari**: **https://guiguitdp-dev.github.io/Accioly01/** (demonstração; o dono libera tudo com o código do dono)
 2. Toque em **Compartilhar** (quadrado com seta ⬆️) → **Adicionar à Tela de Início**.
 3. Pronto: o Accioly Play fica com ícone e abre em tela cheia, com controle na tela para os jogos.
 

@@ -7,7 +7,11 @@
   var API = (CFG.serverUrl || '').replace(/\/$/, '');
   var LOCAL = CFG.localMode === true || (CFG.localMode === 'auto' && isFile && !API);
   // Vitrine (pendrive/APK de demonstração): acesso total por alguns minutos, depois convite para assinar
-  var DEMO = LOCAL && CFG.demo === true;
+  // Nas versões públicas o dono libera tudo NO SEU aparelho com o código secreto (js/dono.js)
+  var DONO_OK = (function () {
+    try { var c = JSON.parse(localStorage.getItem('ap_dono_code') || 'null'); return !!(c && CFG.donoHash && window.Dono && Dono.hash(c) === CFG.donoHash); } catch (e) { return false; }
+  })();
+  var DEMO = LOCAL && CFG.demo === true && !DONO_OK;
   var root = document.getElementById('root');
   var overlay = document.getElementById('overlay');
 
@@ -61,9 +65,11 @@
   // Minutos de acesso total que ainda restam na vitrine (o teste recomeça 7 dias depois)
   function demoLeft() {
     if (!DEMO) return 0;
-    var st = lsGet('ap_demo', 0);
-    if (!st || Date.now() - st > 7 * 86400000) { st = Date.now(); lsSet('ap_demo', st); }
-    return Math.max(0, st + (Number(CFG.demoMinutes) || 30) * 60000 - Date.now());
+    var st = lsGet('ap_demo', 0), now = Date.now(), total = (Number(CFG.demoMinutes) || 30) * 60000;
+    if (!st || now - st > 7 * 86400000) { st = now; lsSet('ap_demo', st); }
+    // Relógio do aparelho voltou no tempo (TV Box sem bateria): não vira demonstração infinita
+    if (st > now + 60000) return 0;
+    return Math.min(total, Math.max(0, st + total - now));
   }
   function access() {
     if (DEMO) return { tv: true, premium: demoLeft() > 0 };
@@ -123,7 +129,7 @@
     var p = document.getElementById('demopill');
     if (p) p.textContent = demoPill();
     if (demoLeft() > 0 || S.demoShown) return;
-    if (Player.isOpen() || GameHub.isOpen() || MediaPlayer.isOpen() || S.modalOpen || !root.querySelector('.topbar')) return;
+    if (Player.isOpen() || GameHub.isOpen() || MediaPlayer.isOpen() || OptionsSheet.isOpen() || S.modalOpen || !root.querySelector('.topbar')) return;
     S.demoShown = true;
     renderHome();
     openBuy('Seu tempo de demonstração com tudo liberado terminou. Os canais, as notícias e os jogos grátis continuam funcionando.');
@@ -444,18 +450,27 @@
     S.newsCur = { row: rowId, i: i };
     track('news', rowId.replace(/^n_/, ''));
   }
+  // A leitura terminou sozinha: o botão volta a "Ouvir"
+  function briefingDone() {
+    S.briefing = false;
+    var b = root.querySelector('#nrows [data-act=nbrief]');
+    if (b) b.textContent = '🔊 Ouvir o resumo do dia';
+  }
   function newsAct(act, el) {
     var n = curNews();
     if (act === 'nbrief' && el.classList.contains('qk')) {
+      toast('🔊 Preparando o resumo do dia…');
       return News.load(newsBase()).then(function (d) {
         S.news = d;
-        if (!News.speak(News.briefing(d))) return toast('Este aparelho não tem voz para ler em voz alta.');
+        // Se a pessoa já foi assistir/jogar enquanto carregava, não fala por cima
+        if (S.tab !== 'inicio' || Player.isOpen() || GameHub.isOpen() || MediaPlayer.isOpen() || S.modalOpen) return;
+        if (!News.speak(News.briefing(d), briefingDone)) return toast('Este aparelho não tem voz para ler em voz alta.');
         S.briefing = true; toast('🔊 Lendo as principais notícias do dia… (na aba Notícias dá para parar)');
       }).catch(function () { toast('Sem notícias agora. Confira a internet.'); });
     }
     if (act === 'nbrief') {
       if (S.briefing) { News.stop(); S.briefing = false; el.textContent = '🔊 Ouvir o resumo do dia'; return; }
-      if (!S.news || !News.speak(News.briefing(S.news))) return toast('Este aparelho não tem voz para ler em voz alta.');
+      if (!S.news || !News.speak(News.briefing(S.news), briefingDone)) return toast('Este aparelho não tem voz para ler em voz alta.');
       S.briefing = true; el.textContent = '⏹ Parar resumo'; return toast('🔊 Lendo as principais notícias do dia…');
     }
     if (act === 'nrefresh') { var b = root.querySelector('#nrows'); if (b) b.innerHTML = '<div class="spinner"></div>'; return loadNews(true); }
@@ -491,10 +506,15 @@
 
   function accountHtml() {
     var u = S.user, st = S.settings;
+    if (DEMO) return '<div class="center" style="min-height:auto"><div class="panel"><h1>Demonstração</h1>' +
+      '<p>' + (demoLeft() > 0 ? 'Você ainda tem <b>' + Math.ceil(demoLeft() / 60000) + ' minutos</b> com tudo liberado.' : 'O tempo com tudo liberado terminou. Canais, notícias e jogos grátis continuam funcionando.') + '</p>' +
+      '<div class="inline" data-row="acc"><button class="btn hot focusable" data-act="buy">⭐ Quero assinar</button>' +
+      '<button class="btn ghost focusable" data-act="dono">🔑 Sou o dono</button>' + androidBtn() + '</div></div></div>';
     if (LOCAL) return '<div class="center" style="min-height:auto"><form class="panel" id="keyf"><h1>Modo Dono</h1>' +
       '<p>' + (window.AndroidTV ? 'App funcionando direto neste aparelho, sem servidor.' : 'Versão do pendrive.') + ' Tudo liberado, sem login. Para vender para clientes, use o servidor (veja o LEIA-ME).</p>' +
       '<label class="field"><span>Chave do YouTube (opcional — libera busca e "em alta" na aba Música)</span><input class="focusable" name="ytkey" type="text" autocomplete="off" placeholder="AIza..." value="' + esc(LocalMedia.hasKey() ? '••••••••' : '') + '"></label>' +
-      '<div class="inline" data-row="acc"><button type="submit" class="btn primary focusable">Salvar chave</button>' + androidBtn() + '</div>' +
+      '<div class="inline" data-row="acc"><button type="submit" class="btn primary focusable">Salvar chave</button>' + androidBtn() +
+      (CFG.demo === true ? '<button type="button" class="btn ghost focusable" data-act="donosair">🔒 Sair do modo dono</button>' : '') + '</div>' +
       '<p class="note">Como pegar a chave grátis: console.cloud.google.com → ativar "YouTube Data API v3" → Credenciais → Criar chave de API.</p></form></div>';
     if (!u) return '<div class="center" style="min-height:auto"><div class="panel"><h1>Minha Conta</h1><p>Entre para ver sua assinatura.</p><div class="inline" data-row="acc"><button class="btn primary focusable" data-act="login">Entrar</button></div></div></div>';
     var status = { trial: 'Teste grátis', active: 'Assinante', expired: 'Teste encerrado', blocked: 'Bloqueado' }[u.status] || u.status;
@@ -635,14 +655,36 @@
       (reason ? '<p>' + esc(reason) + '</p>' : '') +
       '<p>TV ao vivo de fontes oficiais, notícias do dia, 17 jogos no controle remoto, música e vídeos — tudo num lugar só, na TV, no computador e no celular.</p>' +
       '<div class="price">' + money(st.promoPrice) + ' <small>/ mês</small></div>' +
-      '<p class="note">Preço de fundador para os ' + st.promoSlots + ' primeiros assinantes (depois ' + money(st.regularPrice) + '/mês). Teste grátis de ' + st.trialDays + ' dias.</p>' +
+      '<p class="note">Preço de fundador para os ' + st.promoSlots + ' primeiros assinantes, enquanto houver vagas (confirme as vagas ao assinar). Depois, ' + money(st.regularPrice) + '/mês.</p>' +
       (links.length ? '<div class="buyqrs" id="buyqrs">' + links.map(function (l, i) { return '<div class="buyqr"><div class="qr" id="bq' + i + '"></div><span>' + esc(l.note) + '</span></div>'; }).join('') + '</div>'
         : '<p class="note">Para assinar, fale com quem te mostrou o Accioly Play.</p>') +
       '<div class="inline" data-row="buy">' + links.map(function (l) { return '<button class="btn primary focusable" data-act="openlink" data-url="' + esc(l.url) + '">' + l.label + '</button>'; }).join('') +
-      '<button class="btn ghost focusable" data-act="close">Continuar vendo</button></div>');
+      '<button class="btn ghost focusable" data-act="close">Continuar vendo</button></div>' +
+      '<div class="inline" style="margin-top:.4rem" data-row="buy2"><button class="btn ghost focusable small" data-act="dono">🔑 Sou o dono</button></div>');
     if (links.length) loadQr().then(function () {
       links.forEach(function (l, i) { var b = overlay.querySelector('#bq' + i); if (b) b.innerHTML = qrSvg(l.url); });
     }).catch(function () {});
+  }
+
+  // Dono digita o código secreto e libera tudo neste aparelho (versões públicas)
+  function openDono() {
+    openModal('<form id="donof" autocomplete="off"><h2>🔑 Sou o dono</h2><p>Digite o código do dono para liberar tudo neste aparelho.</p>' +
+      '<label class="field"><span>Código do dono</span><input class="focusable" name="codigo" type="text" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX"></label>' +
+      '<div class="inline" data-row="dono"><button type="submit" class="btn primary focusable">Liberar</button><button type="button" class="btn ghost focusable" data-act="close">Voltar</button></div></form>');
+    var f = overlay.querySelector('#donof');
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if ((S.donoFails || 0) >= 5 && Date.now() - S.donoFailAt < 60000) return toast('Muitas tentativas. Espere 1 minuto.');
+      var c = Dono.normalize(f.querySelector('[name=codigo]').value);
+      if (CFG.donoHash && Dono.hash(c) === CFG.donoHash) {
+        lsSet('ap_dono_code', c);
+        toast('✅ Modo Dono liberado neste aparelho');
+        setTimeout(function () { location.reload(); }, 800);
+        return;
+      }
+      S.donoFails = (S.donoFails || 0) + 1; S.donoFailAt = Date.now();
+      toast(CFG.donoHash ? 'Código incorreto.' : 'Esta versão não tem código do dono.');
+    });
   }
 
   function openPaywall(reason, game) {
@@ -746,6 +788,8 @@
     if (/^n(brief|refresh|speak|open|next|qr)$/.test(act)) return newsAct(act, el);
     if (act === 'paywall') return openPaywall();
     if (act === 'buy') return openBuy();
+    if (act === 'dono') return openDono();
+    if (act === 'donosair') { try { localStorage.removeItem('ap_dono_code'); } catch (e) {} toast('Modo dono desligado neste aparelho'); setTimeout(function () { location.reload(); }, 700); return; }
     if (act === 'pix') return checkout('pix');
     if (act === 'mtipo') { S.mediaTipo = S.mediaTipo === 'videos' ? 'music' : 'videos'; el.textContent = S.mediaTipo === 'videos' ? '🎬 Vídeos' : '🎵 Músicas'; return; }
     if (act === 'reward') {
@@ -780,7 +824,7 @@
 
   function openItem(id, rowId) {
     S.lastFocus = document.activeElement;
-    if (S.briefing) { News.stop(); S.briefing = false; }
+    News.stop(); S.briefing = false; // nada de voz por cima de canal, música ou jogo
     var list = rowsIndex[rowId] || [];
     var it = list.filter(function (x) { return x.id === id; })[0] || itemById(id);
     if (!it) return;

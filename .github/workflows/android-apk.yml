@@ -39,57 +39,68 @@ jobs:
           gradle-version: '8.9'
       # Assinatura SEMPRE a mesma: sem isso cada APK sai com uma chave nova e o Android
       # recusa instalar a atualização por cima do app antigo ("app não instalado").
-      # Opcional (mais seguro e permanente): crie o segredo ANDROID_KEYSTORE_B64 com o
-      # arquivo debug.keystore em base64 (Settings > Secrets and variables > Actions).
-      - name: Chave de assinatura (do segredo)
+      # Mais seguro e permanente: crie o segredo ANDROID_KEYSTORE_B64 (arquivo debug.keystore
+      # em base64) em Settings > Secrets and variables > Actions. Sem ele, a chave fica guardada
+      # no cache do GitHub Actions deste repositório.
+      - name: Chave de assinatura (guardada)
+        uses: actions/cache/restore@v5
+        with:
+          path: ~/.android/debug.keystore
+          key: accioly-assinatura-v1
+      - name: Chave de assinatura (segredo, se existir)
+        id: chave
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
         run: |
           mkdir -p ~/.android
-          if [ -n "$KEYSTORE_B64" ]; then echo "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore && echo "Usando a chave do segredo ANDROID_KEYSTORE_B64"; fi
-      - name: Chave de assinatura (guardada entre as compilações)
-        uses: actions/cache@v5
-        with:
-          path: ~/.android/debug.keystore
-          key: accioly-assinatura-v1
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
+            echo "segredo=sim" >> "$GITHUB_OUTPUT"; echo "Usando a chave do segredo ANDROID_KEYSTORE_B64"
+          else
+            echo "segredo=nao" >> "$GITHUB_OUTPUT"
+            [ -f ~/.android/debug.keystore ] && echo "Usando a chave guardada" || echo "Primeira compilação: uma chave nova será criada e guardada"
+          fi
       # Notícias do dia embutidas: o app abre com notícias mesmo antes da internet carregar
       - name: Notícias embutidas
         run: node scripts/news.js --snapshot app/js/noticias-snapshot.js --min 20 || true
+      # O APK é a VITRINE (demonstração + convite para assinar). O dono libera tudo no próprio
+      # aparelho com o código do dono (Conta > Sou o dono). WhatsApp/site do convite:
+      # Settings > Secrets and variables > Actions > Variables: ACCIOLY_WHATSAPP e ACCIOLY_SITE
       - name: Compilar APK
         working-directory: android
         env:
           APP_URL: ${{ inputs.app_url || '' }}
           ADMOB_APP_ID: ${{ inputs.admob_app_id || '' }}
-        run: gradle --no-daemon assembleDebug -PappUrl="$APP_URL" ${ADMOB_APP_ID:+-PadmobAppId="$ADMOB_APP_ID"}
-      - name: Renomear
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk AcciolyPlay-AndroidTV.apk
-      # APK VITRINE: para mostrar a outras pessoas (acesso total por 30 min e depois convite para assinar).
-      # WhatsApp e site de vendas: GitHub > Settings > Secrets and variables > Actions > Variables
-      #   ACCIOLY_WHATSAPP = 5511999999999   ACCIOLY_SITE = https://seusite.com.br
-      - name: Compilar APK vitrine
-        working-directory: android
-        env:
           BUY_WHATSAPP: ${{ vars.ACCIOLY_WHATSAPP }}
           BUY_SITE: ${{ vars.ACCIOLY_SITE }}
-        run: |
-          gradle --no-daemon assembleDebug -Pvitrine=true -PbuyWhatsapp="$BUY_WHATSAPP" -PbuySite="$BUY_SITE"
-          cp app/build/outputs/apk/debug/app-debug.apk ../AcciolyPlay-Vitrine.apk
+        run: gradle --no-daemon assembleDebug -PappUrl="$APP_URL" -PbuyWhatsapp="$BUY_WHATSAPP" -PbuySite="$BUY_SITE" ${ADMOB_APP_ID:+-PadmobAppId="$ADMOB_APP_ID"}
+      - name: Guardar a chave de assinatura
+        if: steps.chave.outputs.segredo == 'nao' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v5
+        continue-on-error: true   # já guardada: não precisa de novo
+        with:
+          path: ~/.android/debug.keystore
+          key: accioly-assinatura-v1
+      - name: Renomear
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk AcciolyPlay.apk
       - uses: actions/upload-artifact@v6
         with:
           name: AcciolyPlay-AndroidTV
-          path: |
-            AcciolyPlay-AndroidTV.apk
-            AcciolyPlay-Vitrine.apk
+          path: AcciolyPlay.apk
       # Link fixo para baixar no celular/TV (só quando é o main):
       # https://github.com/<dono>/<repo>/releases/download/app-latest/AcciolyPlay.apk
+      # Atualiza só o APK (o pendrive e o vídeo do mesmo release continuam no ar).
       - name: Publicar link de download
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp AcciolyPlay-AndroidTV.apk AcciolyPlay.apk
-          gh release delete app-latest --yes --cleanup-tag || true
-          gh release create app-latest AcciolyPlay.apk AcciolyPlay-Vitrine.apk --target "$GITHUB_SHA" \
-            --title "Accioly Play — APK mais recente" \
-            --notes "AcciolyPlay.apk = app do dono (tudo liberado). AcciolyPlay-Vitrine.apk = demonstração para mostrar a outras pessoas. AcciolyPlay-Pendrive.zip = pendrive vitrine completo (aparece alguns minutos depois). Instale no celular Android, Android TV, TV Box ou Fire TV. Gerado a partir do commit ${GITHUB_SHA::7}." \
-            --latest
+          NOTAS="AcciolyPlay.apk = app para celular Android, Android TV, TV Box e Fire TV (demonstração com tempo; o dono libera tudo com o código do dono em Conta > Sou o dono). AcciolyPlay-Pendrive.zip = pendrive vitrine completo. AcciolyPlay-Video.mp4 = vídeo de demonstração. Commit ${GITHUB_SHA::7}."
+          if gh release view app-latest >/dev/null 2>&1; then
+            git tag -f app-latest "$GITHUB_SHA" && git push -f origin refs/tags/app-latest
+            gh release upload app-latest AcciolyPlay.apk --clobber
+            gh release edit app-latest --notes "$NOTAS" --latest
+            gh release delete-asset app-latest AcciolyPlay-Vitrine.apk --yes 2>/dev/null || true
+          else
+            gh release create app-latest AcciolyPlay.apk --target "$GITHUB_SHA" --title "Accioly Play — APK mais recente" --notes "$NOTAS" --latest
+          fi
