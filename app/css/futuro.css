@@ -261,3 +261,22 @@ html[data-perf="leve"] .tile.ntile .nimg { opacity: .75; }
 .tile.qk .sub { position: relative; z-index: 1; font-size: .78rem; color: #c7d6ef; }
 .tile.qk .emoji { top: .7rem; bottom: auto; font-size: 2rem; }
 @media (max-width: 700px) { .tile.qk { width: 9.5rem; height: 6rem; } }
+
+/* Celular: placar não fica embaixo do botão de pausa */
+.game-screen.touch .game-hud { padding-right: calc(max(12px, env(safe-area-inset-right)) + 66px); padding-top: max(.9rem, env(safe-area-inset-top)); }
+
+/* ---------- Capas reais (base; o tema 3D refina) ---------- */
+.tile .cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; border-radius: inherit; }
+.tile.has-cover::after { background: linear-gradient(180deg, rgba(3, 6, 18, 0) 30%, rgba(3, 6, 18, .55) 62%, rgba(3, 6, 18, .95)); z-index: 0; }
+.tile.has-cover .emoji { display: none; }
+.tile.has-cover .mono { top: .55rem; right: .6rem; bottom: auto; transform: scale(.78); transform-origin: top right; }
+.tile .sub { position: relative; z-index: 1; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+/* Top 10 */
+.top10row .rankwrap { display: flex; align-items: flex-end; flex: 0 0 auto; }
+.top10row .rank { font-family: var(--display); font-weight: 900; font-size: 8.5rem; line-height: .8; margin-right: -1.6rem; color: transparent;
+  -webkit-text-stroke: 3px rgba(0, 229, 255, .85); text-shadow: 0 0 24px rgba(0, 229, 255, .35); z-index: 0; position: relative; user-select: none; }
+.top10row .tile { z-index: 1; }
+@media (max-width: 700px) { .top10row .rank { font-size: 5.5rem; margin-right: -1rem; -webkit-text-stroke-width: 2px; } }
+.hero .hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; opacity: .55; border-radius: inherit; }
+.hero.has-bg > :not(.hero-bg) { position: relative; z-index: 1; }
+.hero .hero-bg { -webkit-mask-image: linear-gradient(90deg, transparent 5%, rgba(0, 0, 0, .35) 35%, #000 85%); mask-image: linear-gradient(90deg, transparent 5%, rgba(0, 0, 0, .35) 35%, #000 85%); opacity: .8; }

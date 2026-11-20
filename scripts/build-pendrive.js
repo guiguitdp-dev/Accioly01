@@ -17,7 +17,7 @@
  *       -> CLIENTES: abre do pendrive, mas exige conta no seu servidor.
  *
  * Saída: dist/pendrive/AcciolyPlay  ->  copie TUDO o que está dentro para a RAIZ do pendrive.
- * Inclui, se existirem: APK em dist/apk/ (vitrine: AcciolyPlay-Vitrine.apk) e o vídeo
+ * Inclui, se existirem: APK em dist/apk/ (o AcciolyPlay.apk publicado é a vitrine) e o vídeo
  * dist/video/VIDEO-DEMONSTRACAO.mp4 (para Smart TVs, que só tocam vídeo pelo USB).
  */
 const fs = require('fs');
@@ -50,9 +50,11 @@ fs.rmSync(out, { recursive: true, force: true });
 copyDir(path.join(ROOT, 'app'), path.join(out, 'app'));
 
 // ---------- configuração do app ----------
+// O código do dono (só o resumo) vem do config.js do projeto: na vitrine o dono libera tudo com ele
+const donoHash = (/donoHash: '([0-9a-f]*)'/.exec(fs.readFileSync(path.join(ROOT, 'app', 'js', 'config.js'), 'utf8')) || [])[1] || '';
 const cfg = {
   name: 'Accioly Play', serverUrl: server, localMode: !server,
-  demo: mode === 'vitrine', demoMinutes: minutes, buyWhatsapp: whatsapp, buySite: site
+  demo: mode === 'vitrine', demoMinutes: minutes, buyWhatsapp: whatsapp, buySite: site, donoHash
 };
 fs.writeFileSync(path.join(out, 'app', 'js', 'config.js'), '/* Gerado por scripts/build-pendrive.js (modo ' + mode + ') */\nwindow.APP_CONFIG = ' + JSON.stringify(cfg, null, 2) + ';\n');
 
@@ -97,11 +99,11 @@ fs.writeFileSync(path.join(out, 'ABRIR EM TELA CHEIA (Windows).bat'), crlf([
 const apkDir = path.join(ROOT, 'dist', 'apk');
 let apk = '';
 if (fs.existsSync(apkDir)) {
+  // O APK publicado é a vitrine. Um APK "dono" (gradle -Pdono=true, tudo liberado) só vai no pendrive do dono.
   const apks = fs.readdirSync(apkDir).filter((f) => f.endsWith('.apk'));
-  const vit = apks.filter((f) => /vitrine/i.test(f));
-  const own = apks.filter((f) => !/vitrine/i.test(f));
-  // A vitrine nunca leva o APK do dono (que libera tudo)
-  apk = mode === 'vitrine' ? vit[0] : (own[0] || vit[0]);
+  const own = apks.filter((f) => /dono/i.test(f));
+  const pub = apks.filter((f) => !/dono/i.test(f));
+  apk = mode === 'dono' ? (own[0] || pub[0]) : pub[0];
   if (apk) fs.copyFileSync(path.join(apkDir, apk), path.join(out, 'AcciolyPlay.apk'));
 }
 
@@ -128,7 +130,7 @@ fs.writeFileSync(path.join(out, 'COMO USAR.txt'), crlf([
   '  Use as setas + Enter, um controle de videogame ou o mouse. F11 = tela cheia.',
   '',
   'ANDROID TV / GOOGLE TV / TV BOX / FIRE TV / CELULAR ANDROID',
-  apk ? '  1. Conecte o pendrive (no celular, com adaptador OTG).' : '  Instale o app pelo link: https://github.com/guiguitdp-dev/Accioly01/releases/download/app-latest/AcciolyPlay' + (mode === 'vitrine' ? '-Vitrine' : '') + '.apk',
+  apk ? '  1. Conecte o pendrive (no celular, com adaptador OTG).' : '  Instale o app pelo link: https://github.com/guiguitdp-dev/Accioly01/releases/download/app-latest/AcciolyPlay.apk',
   apk ? '  2. Abra um gerenciador de arquivos (ex.: "File Commander" ou "X-plore", grátis na Play Store).' : null,
   apk ? '  3. Toque em AcciolyPlay.apk e permita "instalar apps desconhecidos".' : null,
   apk ? '  4. O Accioly Play aparece na tela inicial. Funciona com o controle remoto.' : null,
@@ -149,5 +151,5 @@ fs.writeFileSync(path.join(out, 'COMO USAR.txt'), crlf([
 console.log('\nPronto! Copie TUDO o que está dentro desta pasta para a RAIZ do pendrive:\n  ' + out);
 console.log('Modo: ' + (mode === 'vitrine' ? 'VITRINE (demonstração de ' + minutes + ' min' + (whatsapp ? ', WhatsApp ' + whatsapp : '') + (site ? ', site ' + site : '') + ')' : mode === 'dono' ? 'DONO (tudo liberado)' : 'CLIENTE (servidor ' + server + ')'));
 if (mode === 'vitrine' && !whatsapp && !site) console.log('Dica: informe --whatsapp 55DDDNUMERO para aparecer o QR Code "Assinar pelo WhatsApp".');
-console.log(apk ? 'APK incluído: ' + apk : 'Sem APK ' + (mode === 'vitrine' ? 'de vitrine ' : '') + '(opcional: coloque em dist/apk/).');
+console.log(apk ? 'APK incluído: ' + apk : 'Sem APK (opcional: coloque o AcciolyPlay.apk em dist/apk/).');
 console.log(fs.existsSync(path.join(out, 'VIDEO-DEMONSTRACAO.mp4')) ? 'Vídeo de demonstração incluído.' : 'Sem vídeo de demonstração (gere com: node scripts/demo-video.js).');

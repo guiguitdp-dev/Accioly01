@@ -27,6 +27,7 @@ const health = require('./lib/health');
 const mercadopago = require('./lib/mercadopago');
 const media = require('./lib/media');
 const news = require('./lib/news');
+const capas = require('./lib/capas');
 
 const ROOT = path.resolve(__dirname, '..');
 const APP_DIR = path.join(ROOT, 'app');
@@ -172,7 +173,8 @@ function publicCatalog() {
       const out = Object.assign({}, i);
       if (i.type === 'youtube' && !i.channelId && D.yt[i.handle] && D.yt[i.handle].channelId) out.channelId = D.yt[i.handle].channelId;
       const ytInfo = i.handle ? D.yt[i.handle] : (hr[i.id] && hr[i.id].channelId ? hr[i.id] : null);
-      if (i.type === 'youtube' && ytInfo) out.live = !!ytInfo.live;
+      // Só troca "ao vivo" quando a verificação conseguiu saber de verdade (o YouTube às vezes bloqueia robôs)
+      if (i.type === 'youtube' && ytInfo && ytInfo.liveKnown !== false) out.live = !!ytInfo.live;
       // Sinal fora do ar na última verificação (só para o que toca dentro do app)
       const h = hr[i.id];
       if (h && !h.ok && i.type !== 'link' && Date.now() - (h.at || 0) < DAY) out.status = 'off';
@@ -435,9 +437,12 @@ route('GET', '/api/yt/resolve', async (req, res, body, params, query) => {
   if (cached && Date.now() - cached.at < 7 * DAY && Date.now() - (cached.liveAt || cached.at) < 600e3) return send(res, 200, { channelId: cached.channelId, live: cached.live });
   if (limited(req, 'yt', 120, 600e3)) return send(res, 200, { channelId: cached ? cached.channelId : null, live: cached ? cached.live : false });
   try {
-    const r = await health.resolveYoutube(handle);
-    if (r.channelId) { D.yt[handle] = { channelId: r.channelId, live: r.live, at: Date.now(), liveAt: Date.now() }; db.save(); }
-    send(res, 200, { channelId: r.channelId || (cached && cached.channelId) || null, live: r.live });
+    const item = D.catalog.items.find((i) => i.handle === handle);
+    const r = await health.resolveYoutube(handle, item && item.channelId);
+    // Sem saber se está ao vivo (YouTube bloqueou): canais 24h continuam como ao vivo
+    const live = r.liveKnown ? r.live : !!(item && item.live === true);
+    if (r.channelId) { D.yt[handle] = { channelId: r.channelId, live, liveKnown: r.liveKnown, at: Date.now(), liveAt: Date.now() }; db.save(); }
+    send(res, 200, { channelId: r.channelId || (cached && cached.channelId) || null, live });
   } catch (e) { send(res, 200, { channelId: cached ? cached.channelId : null, live: cached ? cached.live : false }); }
 });
 
@@ -478,6 +483,15 @@ route('GET', '/api/news', async (req, res) => {
     const r = await news.get();
     send(res, 200, { updatedAt: r.updatedAt, total: r.total, top: r.top, sections: r.sections }, { 'Cache-Control': 'public, max-age=300' });
   } catch (e) { fail(res, 503, 'Notícias indisponíveis agora.'); }
+});
+
+// Capas reais dos canais (vídeo mais recente de cada canal oficial; cache de 1 hora)
+route('GET', '/api/capas', async (req, res) => {
+  if (NEWS_MOCK) return send(res, 200, capas.mock(D.catalog.items));
+  try {
+    const r = await capas.get(D.catalog.items);
+    send(res, 200, { updatedAt: r.updatedAt, items: r.items }, { 'Cache-Control': 'public, max-age=600' });
+  } catch (e) { fail(res, 503, 'Capas indisponíveis agora.'); }
 });
 
 // ---------------- Painel do Dono ----------------
@@ -791,7 +805,7 @@ async function runHealth() {
     D.health = { checkedAt: Date.now(), results };
     for (const it of D.catalog.items) {
       const r = results[it.id];
-      if (it.type === 'youtube' && it.handle && r && r.channelId) D.yt[it.handle] = { channelId: r.channelId, live: !!r.live, at: Date.now(), liveAt: Date.now() };
+      if (it.type === 'youtube' && it.handle && r && r.channelId) D.yt[it.handle] = { channelId: r.channelId, live: !!r.live, liveKnown: r.liveKnown !== false, at: Date.now(), liveAt: Date.now() };
     }
     db.save();
     const bad = Object.values(results).filter((r) => !r.ok).length;

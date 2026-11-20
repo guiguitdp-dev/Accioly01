@@ -9,7 +9,7 @@ Escolha o seu caso:
    (no celular dá para escanear o QR Code do README).
    - Na Android TV/TV Box sem navegador: instale o app **Downloader** (grátis na Play Store) e digite esse link.
 2. Abra o arquivo baixado e permita **instalar apps desta fonte**.
-3. O app abre **funcionando sem servidor** (modo dono). Para conectar ao seu servidor depois: **Conta → 📡 Conectar ao meu servidor**.
+3. O app abre **funcionando sem servidor**, em modo demonstração. **Dono:** Conta → 🔑 Sou o dono → digite o código do dono (libera tudo neste aparelho). Para conectar ao seu servidor: **Conta → 📡 Conectar ao meu servidor**.
 
 ## 💾 Pendrive pronto para mostrar e vender (vitrine)
 
@@ -38,7 +38,7 @@ Montar no seu PC: `npm run pendrive -- --whatsapp 5511999999999` (vitrine) · `n
 1. No GitHub do projeto, abra **Actions** → **Gerar APK Android TV** → clique na execução mais recente (verde) → baixe **AcciolyPlay-AndroidTV** em "Artifacts".
    - O APK é **universal**: na primeira abertura ele pergunta o endereço do servidor (aparece na janela do servidor, linha "Na TV").
    - Para clientes, gere um APK com o endereço já fixo: **Run workflow** → preencha `https://seudominio.com.br/tv/`.
-2. Descompacte e coloque o `.apk` na pasta `dist/apk/` do projeto. Rode `npm run pendrive:dono` — o APK vai junto para a pasta do pendrive (a vitrine usa o `AcciolyPlay-Vitrine.apk`).
+2. Descompacte e coloque o `.apk` na pasta `dist/apk/` do projeto. Rode `npm run pendrive` — o APK vai junto para a pasta do pendrive.
 
 **Jeito mais rápido (sem pendrive):** no Windows, dê dois cliques em `INSTALAR-NO-ANDROID.bat` e escolha cabo USB (celular) ou Wi-Fi (TV/TV Box com depuração ativada).
 

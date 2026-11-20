@@ -15,7 +15,8 @@ Aponte a câmera do celular para o QR Code ou abra o link no celular/TV:
 **https://github.com/guiguitdp-dev/Accioly01/releases/download/app-latest/AcciolyPlay.apk**
 
 1. Baixe o arquivo **AcciolyPlay.apk** e toque nele para instalar (o Android vai pedir para **permitir instalar apps desta fonte** → permita).
-2. Abra o **Accioly Play**: ele já funciona **direto no aparelho, sem servidor** (modo dono, tudo liberado).
+2. Abra o **Accioly Play**: ele já funciona **direto no aparelho, sem servidor**, em modo **demonstração** (30 min com tudo liberado e depois convite para assinar).
+   - **Dono:** em **Conta → 🔑 Sou o dono**, digite o **código do dono** e tudo fica liberado naquele aparelho. Trocar o código: `npm run codigo-dono`.
 3. Para usar com seu servidor (contas, assinaturas): **Conta → 📡 Conectar ao meu servidor**.
 4. Para a busca do YouTube no aparelho: **Conta → Chave do YouTube** (grátis, veja `docs/ANUNCIOS-E-YOUTUBE.md`).
 
@@ -31,7 +32,7 @@ Vídeo para divulgar: **https://github.com/guiguitdp-dev/Accioly01/releases/down
 
 O iPhone não instala APK. Use o app web (mesmo app, mesma tela):
 
-1. No iPhone, abra no **Safari**: **https://guiguitdp-dev.github.io/Accioly01/**
+1. No iPhone, abra no **Safari**: **https://guiguitdp-dev.github.io/Accioly01/** (demonstração; o dono libera tudo com o código do dono)
 2. Toque em **Compartilhar** (quadrado com seta ⬆️) → **Adicionar à Tela de Início**.
 3. Pronto: o Accioly Play fica com ícone e abre em tela cheia, com controle na tela para os jogos.
 
@@ -75,6 +76,7 @@ Passo a passo completo: **[docs/INSTALAR-NA-TV.md](docs/INSTALAR-NA-TV.md)** · 
 | **App da TV** (`app/`) | Telas estilo streaming, navegação só com setas + OK + VOLTAR, player de canais ao vivo (troca de canal com ▲▼), fileira **🔥 Em alta**, aba **Kids**, favoritos, "continuar assistindo", recordes nos jogos, aviso de canal fora do ar, vídeos recentes quando o canal do YouTube não está ao vivo, Pix por QR Code na própria TV |
 | **Visual do futuro + opções** (`css/futuro.css`, `js/options.js`) | Tema neon/vidro com fonte futurista; **⚙️ Opções no vídeo**: qualidade, tamanho da imagem (ajustar/preencher/esticar/zoom), legendas, velocidade e volume; **⚙️ Opções nos jogos**: som, vibração do controle, gráficos (máximo/leve), tela cheia e FPS; **⚙️ Ajustes**: visual, tamanho da tela (letras grandes), legendas. Modo leve automático em TV/TV Box fraca |
 | **17 jogos** (`app/js/games/`) | **Em alta:** Festa das Frutas (combinar 3), Blocos Encaixe (block puzzle), Disputa de Pênaltis, Palavra Secreta (palavra do dia), Corre Capivara (corrida infinita). **Tiro e Ação (nostalgia):** Esquadrilha 2000, Comando Retrô, Mira Certeira, Operação 3D (3D retrô em primeira pessoa). **Clássicos:** Cobrinha Neon, Quebra-Blocos, Pingue-Pongue (2 jogadores), Chuva de Meteoros, Memória Brasil, Quiz Brasil, Jogo da Velha, Corrida Neon — 5 grátis, 8 premium (configurável) |
+| **Capas reais e seções** (`server/lib/capas.js`, `app/img/jogos/`) | Cartões com a miniatura oficial do vídeo mais recente de cada canal (atualiza de hora em hora) e a tela real de cada jogo; seções **Ao vivo agora**, **Top 10**, **Jogos em alta**, **Para assistir em família** |
 | **📰 Notícias do dia** (`app/js/news.js`, `server/lib/news.js`) | Brasil, Mundo, Economia, Esportes, Tecnologia, Saúde e Cultura dos feeds oficiais (Agência Brasil, g1, Folha, BBC News Brasil, DW, ONU News...), **atualizadas de hora em hora** pelo GitHub Actions (ramo `noticias-dados`), canais de notícias ao vivo, **🔊 ouvir em voz alta**, resumo do dia e **📱 ler no celular** por QR Code |
 | **Vitrine** (`npm run pendrive`) | Demonstração com tempo (30 min) e convite para assinar com QR Code do WhatsApp/site; APK vitrine, ZIP do pendrive e vídeo de demonstração gerados sozinhos |
 | **Música e Vídeos** (`app/js/media.js`) | Busca oficial do YouTube (músicas e vídeos em alta no Brasil, toca em sequência) + **Música livre sem anúncios** (Audius). Veja [docs/ANUNCIOS-E-YOUTUBE.md](docs/ANUNCIOS-E-YOUTUBE.md) |

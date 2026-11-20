@@ -18,6 +18,9 @@
  *           grátis continuam e o resto mostra o convite para assinar, com
  *           QR Code do WhatsApp (buyWhatsapp) e do site de vendas (buySite).
  *   Monte com: npm run pendrive  (vitrine é o padrão)  ·  npm run pendrive -- --dono
+ *
+ * donoHash: resumo do CÓDIGO DO DONO. Nas versões públicas (vitrine), o dono digita o
+ *   código em Conta > "Sou o dono" e libera tudo no aparelho. Trocar: npm run codigo-dono
  */
 window.APP_CONFIG = {
   name: 'Accioly Play',
@@ -26,5 +29,6 @@ window.APP_CONFIG = {
   demo: false,
   demoMinutes: 30,
   buyWhatsapp: '',
-  buySite: ''
+  buySite: '',
+  donoHash: '0be93c481f0921fd4975327baac8c80a1bbed60fdc8339efa38d1032be9b68bc'
 };

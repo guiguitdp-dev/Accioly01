@@ -18,20 +18,58 @@ async function get(url, ms) {
   } finally { clearTimeout(t); }
 }
 
-async function resolveYoutube(handle) {
-  const h = String(handle || '').trim();
-  if (!/^@[\w.\-]{2,60}$/.test(h)) return { channelId: null, live: false, error: 'handle inválido' };
-  const r = await get('https://www.youtube.com/' + h, 15000);
-  if (r.status >= 400) return { channelId: null, live: false, error: 'HTTP ' + r.status };
-  const m = r.text.match(/<link rel="canonical" href="https:\/\/www\.youtube\.com\/channel\/(UC[\w-]{22})"/) ||
-            r.text.match(/"externalId":"(UC[\w-]{22})"/) || r.text.match(/"channelId":"(UC[\w-]{22})"/);
-  if (!m) return { channelId: null, live: false, error: 'ID não encontrado' };
-  let live = false;
+// O YouTube costuma bloquear robôs em servidores de nuvem: isso NÃO quer dizer que o canal saiu do ar.
+// Por isso só marcamos "fora do ar" quando o YouTube responde claramente que o canal não existe (404).
+function realPage(t) { return /ytInitialData|"externalId"|og:title/.test(t || ''); }
+
+// true = ao vivo, false = sem live, null = não deu para saber agora
+async function liveStatus(channelId) {
   try {
-    const lr = await get('https://www.youtube.com/channel/' + m[1] + '/live', 15000);
-    live = /"isLiveNow":true|"isLive":true|hqdefault_live\.jpg/.test(lr.text);
-  } catch (e) { /* ignora */ }
-  return { channelId: m[1], live };
+    const lr = await get('https://www.youtube.com/channel/' + channelId + '/live', 15000);
+    if (lr.status >= 400 || !realPage(lr.text)) return null;
+    return /"isLiveNow":true|"isLive":true|hqdefault_live\.jpg/.test(lr.text);
+  } catch (e) { return null; }
+}
+
+// Confere o canal pelo ID oficial no feed público do YouTube (leve e confiável)
+// { exists: true/false/null, title }: o nome oficial serve para conferir que o ID é do canal certo
+async function channelInfo(channelId) {
+  try {
+    const r = await get('https://www.youtube.com/feeds/videos.xml?channel_id=' + channelId, 15000);
+    if (r.status === 404) return { exists: false, title: '' };
+    if (r.status < 400 && /<feed\b/.test(r.text)) {
+      const t = /<title>([^<]*)<\/title>/.exec(r.text);
+      return { exists: true, title: t ? t[1].replace(/&amp;/g, '&').trim() : '' };
+    }
+  } catch (e) { /* sem resposta */ }
+  return { exists: null, title: '' };
+}
+
+// Descobre o ID pelo @handle (ou usa o ID já conhecido) e vê se está ao vivo
+async function resolveYoutube(handle, knownId) {
+  const h = String(handle || '').trim();
+  let id = null, error = null;
+  if (/^@[\w.\-]{2,60}$/.test(h)) {
+    try {
+      const r = await get('https://www.youtube.com/' + h, 15000);
+      if (r.status === 404) error = 'canal não existe (HTTP 404)';
+      else if (r.status >= 400) error = 'HTTP ' + r.status;
+      else {
+        const m = r.text.match(/<link rel="canonical" href="https:\/\/www\.youtube\.com\/channel\/(UC[\w-]{22})"/) ||
+                  r.text.match(/"externalId":"(UC[\w-]{22})"/) || r.text.match(/"channelId":"(UC[\w-]{22})"/);
+        if (m) id = m[1]; else error = 'ID não encontrado';
+      }
+    } catch (e) { error = e.name === 'AbortError' ? 'tempo esgotado' : String(e.message || e); }
+  } else if (h) error = 'handle inválido';
+  id = id || (/^UC[\w-]{22}$/.test(knownId || '') ? knownId : null);
+  if (!id) return { channelId: null, live: false, liveKnown: false, error: error || 'sem ID' };
+  const live = await liveStatus(id);
+  return { channelId: id, live: live === true, liveKnown: live !== null };
+}
+
+function ytNote(exists, live) {
+  return (exists === true ? 'canal OK' : 'canal não confirmado agora (YouTube não respondeu) — mantido no ar') +
+    (live === true ? ' · AO VIVO agora' : live === false ? ' (sem live no momento)' : '');
 }
 
 async function checkItem(it) {
@@ -41,14 +79,18 @@ async function checkItem(it) {
       const ok = r.status < 400 && r.text.indexOf('#EXTM3U') >= 0;
       return { ok, status: r.status, ms: r.ms, note: ok ? 'sinal OK' : 'playlist inválida/fora do ar' };
     }
-    if (it.type === 'youtube' && !it.handle && it.channelId) {
-      const lr = await get('https://www.youtube.com/channel/' + it.channelId + '/live', 15000);
-      const live = /"isLiveNow":true|"isLive":true|hqdefault_live\.jpg/.test(lr.text);
-      return { ok: lr.status < 400, channelId: it.channelId, live, note: lr.status < 400 ? (live ? 'AO VIVO agora' : 'canal OK (sem live no momento)') : 'canal não encontrado' };
+    if (it.type === 'youtube' && it.channelId) {
+      const info = await channelInfo(it.channelId);
+      const exists = info.exists, title = info.title;
+      if (exists === false) return { ok: false, channelId: it.channelId, live: false, note: 'canal não encontrado no YouTube (o ID mudou?)' };
+      const live = await liveStatus(it.channelId);
+      return { ok: true, channelId: it.channelId, title, live: live === true, liveKnown: live !== null, note: ytNote(exists, live) + (title ? ' — "' + title + '"' : '') };
     }
     if (it.type === 'youtube') {
       const y = await resolveYoutube(it.handle);
-      return { ok: !!y.channelId, channelId: y.channelId, live: y.live, note: y.channelId ? (y.live ? 'AO VIVO agora' : 'canal OK (sem live no momento)') : (y.error || 'falhou') };
+      if (y.channelId) return { ok: true, channelId: y.channelId, live: y.live, liveKnown: y.liveKnown, note: ytNote(true, y.liveKnown ? y.live : null) };
+      const gone = /404|inválido/.test(y.error || '');
+      return { ok: !gone, note: gone ? y.error : 'sem ID gravado e o YouTube não respondeu (' + y.error + ') — mantido no ar' };
     }
     const r = await get(it.url, 12000);
     const ok = r.status < 400;
@@ -71,4 +113,4 @@ async function checkAll(items, concurrency) {
   return out;
 }
 
-module.exports = { checkAll, checkItem, resolveYoutube };
+module.exports = { checkAll, checkItem, resolveYoutube, channelInfo, liveStatus };

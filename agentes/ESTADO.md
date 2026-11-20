@@ -11,8 +11,12 @@ Atualizado em: 2026-11-20
 
 ## Notícias e vitrine (v1.8)
 - Aba 📰 Notícias + fileira na tela inicial: feeds RSS oficiais (server/lib/news.js), publicados de hora em hora no ramo `noticias-dados` (workflow noticias.yml). Sem servidor o app lê o raw do GitHub; pendrive/APK levam cópia embutida. Ouvir (voz do navegador ou TTS do Android) e QR "ler no celular".
-- Pendrive VITRINE (padrão de `npm run pendrive`): 30 min tudo liberado → convite com QR do WhatsApp (vars ACCIOLY_WHATSAPP/ACCIOLY_SITE). Release app-latest: AcciolyPlay.apk (dono), AcciolyPlay-Vitrine.apk, AcciolyPlay-Pendrive.zip, AcciolyPlay-Video.mp4.
+- Pendrive VITRINE (padrão de `npm run pendrive`): 30 min tudo liberado → convite com QR do WhatsApp (vars ACCIOLY_WHATSAPP/ACCIOLY_SITE). Release app-latest: AcciolyPlay.apk (vitrine), AcciolyPlay-Pendrive.zip, AcciolyPlay-Video.mp4.
+- v1.9: versões públicas (APK, site, pendrive) = vitrine; dono libera no aparelho com o CÓDIGO DO DONO (app/js/dono.js, só o hash fica no config.js; trocar: npm run codigo-dono). Canais: verificador usa o ID oficial (feed do YouTube) → 71/71 OK; sem ID só Band, Times Brasil, TV Evangelizar. APK com chave de assinatura fixa (cache do Actions ou segredo ANDROID_KEYSTORE_B64).
 - Autorun ao conectar é impossível (bloqueado pelos sistemas): pendrive tem autorun.inf só com nome/ícone + "ABRIR ACCIOLY PLAY.html".
+
+## Visual realista (v2.0)
+- Capas reais: miniatura oficial do último vídeo de cada canal (scripts/capas.js → ramo noticias-dados/capas.json, /api/capas) e foto real de cada jogo (scripts/capturar-jogos.js → app/img/jogos). Seções: Ao vivo agora, Top 10 (TOP_CASA em app.js), Jogos em alta, Para a família. Tema 3D em css/realista.css + js/fx3d.js.
 
 ## Visual e opções (v1.7)
 - Tema "Futuro" (css/futuro.css + fonte Orbitron embutida): vidro, neon, grade holográfica; modo leve automático em aparelho fraco.
@@ -33,7 +37,7 @@ Atualizado em: 2026-11-20
 - 37 itens no catálogo (HLS oficiais, YouTube oficiais e links de apps gratuitos). Primeira verificação real deve rodar no servidor do dono (no Brasil).
 
 ## Qualidade
-- Teste automático: 72/72 passando (inclui notícias e vitrine) (Pix, 17 jogos, Música e Vídeos, AdSense, AdMob simulado).
+- Teste automático: 77/77 passando (notícias, vitrine, código do dono, capas e Top 10) (Pix, 17 jogos, Música e Vídeos, AdSense, AdMob simulado).
 - APK Android TV compila no GitHub Actions (artefato "AcciolyPlay-AndroidTV").
 
 ## Números

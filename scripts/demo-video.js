@@ -146,7 +146,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   }
   await card('<div style="font:900 72px system-ui">Accioly <span style="color:#00e5ff">Play</span></div>' +
     '<div style="font-size:34px">Teste grátis · Assinatura de fundador <b style="color:#ffb020">R$ 15,99/mês</b></div>' +
-    '<div style="opacity:.8;font-size:24px">Para os 50 primeiros assinantes (depois R$ 24,90/mês)</div>' +
+    '<div style="opacity:.8;font-size:24px">Para os 50 primeiros assinantes, enquanto houver vagas (depois R$ 24,90/mês)</div>' +
     (qr ? '<div style="display:flex;align-items:center;gap:1.4rem"><div style="background:#fff;padding:10px;border-radius:14px;width:220px;height:220px">' + qr.replace('<svg ', '<svg style="width:100%;height:100%" ') + '</div>' +
       '<div style="text-align:left;font-size:28px">Aponte a câmera<br>do celular e<br>assine pelo WhatsApp</div></div>' : '<div style="font-size:26px">Peça o seu para quem te mostrou o Accioly Play</div>') +
     '<div style="opacity:.6;font-size:20px">Somente canais e conteúdos oficiais e gratuitos</div>');

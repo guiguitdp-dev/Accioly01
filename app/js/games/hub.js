@@ -107,7 +107,7 @@
     if (!def) return;
     stop(true);
     var el = document.createElement('div');
-    el.className = 'game-screen';
+    el.className = 'game-screen' + (isTouch() ? ' touch' : '');
     el.innerHTML = '<canvas width="' + W + '" height="' + H + '"></canvas>' +
       '<div class="game-hud"><span id="ghl"></span><span id="ghr"></span></div>' +
       '<div class="game-help">' + esc(def.help || '') + (isTouch() ? ' · ⏸ pausa' : ' · VOLTAR pausa') + '</div>' +

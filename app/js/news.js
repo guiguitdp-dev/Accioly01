@@ -63,26 +63,33 @@
     var vs = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
     return vs.filter(function (v) { return /^pt[-_]BR/i.test(v.lang); })[0] || vs.filter(function (v) { return /^pt/i.test(v.lang); })[0] || null;
   }
-  function speak(text) {
+  // onDone: chamado quando a leitura termina sozinha (não quando é interrompida)
+  var doneCb = null, seq = 0;
+  window.__ttsDone = function () { var cb = doneCb; doneCb = null; if (cb) cb(); };
+  function speak(text, onDone) {
     text = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 3800);
     if (!text) return false;
+    stop();
+    doneCb = onDone || null;
     var n = native();
-    if (n) { try { n.speak(text); return true; } catch (e) {} }
+    if (n) { try { n.speak(text); return true; } catch (e) { doneCb = null; } }
     if (!canSpeak()) return false;
-    speechSynthesis.cancel();
+    var my = ++seq;
     // O Chrome corta falas longas: fala em pedaços de até ~200 letras
     var parts = text.match(/[^.!?]+[.!?]*/g) || [text], chunks = [], cur = '';
     parts.forEach(function (p) { if ((cur + p).length > 200 && cur) { chunks.push(cur); cur = p; } else cur += p; });
     if (cur) chunks.push(cur);
     var v = voice();
-    chunks.forEach(function (c) {
+    chunks.forEach(function (c, i) {
       var u = new SpeechSynthesisUtterance(c.trim());
       u.lang = 'pt-BR'; if (v) u.voice = v; u.rate = 1;
+      if (i === chunks.length - 1) u.onend = function () { if (my === seq) window.__ttsDone(); };
       speechSynthesis.speak(u);
     });
     return true;
   }
   function stop() {
+    doneCb = null; seq++;
     var n = native();
     if (n && n.stopSpeak) { try { n.stopSpeak(); } catch (e) {} }
     if (window.speechSynthesis) try { speechSynthesis.cancel(); } catch (e) {}
