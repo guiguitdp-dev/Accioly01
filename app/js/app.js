@@ -99,7 +99,8 @@
     var tabs = [['inicio', 'Início'], ['tv', 'TV ao Vivo'], ['filmes', 'Filmes'], ['midia', '🎵 Música'], ['jogos', 'Jogos'], ['kids', 'Kids 🧸'], ['conta', 'Conta']];
     return '<header class="topbar"><div class="brand">' + brandHtml() + '</div><nav class="tabs" data-row="tabs">' +
       tabs.map(function (t) { return '<button class="tab focusable' + (S.tab === t[0] ? ' active' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') +
-      '</nav><div class="spacer"></div><span class="clock" id="clock">' + clockText() + '</span>' + pill + '</header>';
+      '</nav><div class="spacer"></div><span class="clock" id="clock">' + clockText() + '</span>' + pill +
+      '<button class="tab gear focusable" data-act="ajustes" aria-label="Ajustes">⚙️</button></header>';
   }
 
   function brandHtml() {
@@ -240,6 +241,7 @@
       html += grid('jnovos', '🔥 Lançamentos', all.filter(function (g) { return g.trending && !g.shooter; }));
       html += grid('jclassicos', '🕹️ Clássicos', all.filter(function (g) { return !g.trending && !g.shooter; }));
     } else if (S.tab === 'conta') {
+      html += '<div class="inline" style="margin:0 var(--safe) 1rem" data-row="aj"><button class="btn primary focusable" data-act="ajustes">⚙️ Ajustes: visual, tamanho da tela, som e legendas</button></div>';
       html += accountHtml();
     }
     root.innerHTML = html;
@@ -325,6 +327,20 @@
   // Desbloqueio de jogo premium por anúncio recompensado (30 min)
   function unlocked(id) { var u = lsGet('ap_unlocks', {}); return u[id] && u[id] > Date.now(); }
   function unlock(id) { var u = lsGet('ap_unlocks', {}); u[id] = Date.now() + 30 * 60000; lsSet('ap_unlocks', u); }
+
+  // Ajustes do app (guardados neste aparelho)
+  function openAjustes(from) {
+    var perf = ['auto', 'alto', 'leve'], ui = ['normal', 'grande', 'pequeno'], tam = ['ajustar', 'preencher', 'esticar', 'zoom'];
+    OptionsSheet.open(document.body, 'Ajustes', [
+      { label: 'Visual', values: ['Automático', 'Futuro completo (efeitos e animações)', 'Leve (TV/TV Box mais simples)'], index: Math.max(0, perf.indexOf(Prefs.get('perf'))),
+        note: 'Automático deixa leve sozinho quando o aparelho é mais fraco', onChange: function (i) { Prefs.set('perf', perf[i]); if (i) Prefs.set('autoLeve', false); } },
+      { label: 'Tamanho da tela', values: ['Normal', 'Grande (letras maiores)', 'Pequeno (mais itens)'], index: Math.max(0, ui.indexOf(Prefs.get('ui'))), onChange: function (i) { Prefs.set('ui', ui[i]); } },
+      { label: 'Legendas nos vídeos', values: ['Desligadas', 'Ligadas (quando houver)'], index: Prefs.get('legenda') === 'pt' ? 1 : 0, onChange: function (i) { Prefs.set('legenda', i ? 'pt' : 'off'); } },
+      { label: 'Enquadramento do vídeo', values: ['Ajustar', 'Preencher a tela', 'Esticar', 'Zoom'], index: Math.max(0, tam.indexOf(Prefs.get('tamanho'))), onChange: function (i) { Prefs.set('tamanho', tam[i]); } },
+      { label: 'Som dos jogos', values: ['Ligado', 'Desligado'], index: Prefs.get('som') ? 0 : 1, onChange: function (i) { Prefs.set('som', i === 0); } },
+      { label: 'Vibração do controle', values: ['Ligada', 'Desligada'], index: Prefs.get('vibra') ? 0 : 1, onChange: function (i) { Prefs.set('vibra', i === 0); } }
+    ], function () { if (from && document.body.contains(from)) Input.focus(from); else restoreFocus(); });
+  }
 
   function accountHtml() {
     var u = S.user, st = S.settings;
@@ -549,6 +565,7 @@
     if (act === 'login') return renderAuth('login');
     if (act === 'welcome') return renderWelcome();
     if (act === 'server') { if (window.AndroidTV && AndroidTV.resetServer) AndroidTV.resetServer(); return; }
+    if (act === 'ajustes') return openAjustes(el);
     if (act === 'iosok') { lsSet('ap_ios_ok', true); el.remove(); return; }
     if (act === 'local') { if (window.AndroidTV && AndroidTV.useLocal) AndroidTV.useLocal(); return; }
     if (act === 'close') return closeModal();
@@ -656,7 +673,7 @@
 
   // Ações globais (prioridade mais baixa: player e jogos interceptam antes)
   Input.on(function (a) {
-    if (Player.isOpen() || GameHub.isOpen() || MediaPlayer.isOpen()) return false;
+    if (Player.isOpen() || GameHub.isOpen() || MediaPlayer.isOpen() || OptionsSheet.isOpen()) return false;
     var scope = S.modalOpen ? overlay : root;
     if (a === 'up' || a === 'down' || a === 'left' || a === 'right') { Input.move(a, scope); return true; }
     if (a === 'ok') {
@@ -691,6 +708,7 @@
   }
 
   function boot() {
+    Prefs.detect();
     S.token = lsGet('ap_token', null);
     var ref = (new URLSearchParams(location.search)).get('ref');
     if (ref) lsSet('ap_ref', ref);

@@ -9,6 +9,10 @@ Atualizado em: 2026-11-18
 - v1.2: aba Música e Vídeos (YouTube oficial + Música livre/Audius) e AdSense só para não assinantes.
 - v1.3: AdMob no APK (intersticial + premiado, consentimento UMP; IDs de teste até o dono configurar). Dono precisa: chave YouTube API e conta AdSense aprovada (docs/ANUNCIOS-E-YOUTUBE.md).
 
+## Visual e opções (v1.7)
+- Tema "Futuro" (css/futuro.css + fonte Orbitron embutida): vidro, neon, grade holográfica; modo leve automático em aparelho fraco.
+- ⚙️ Opções no player (qualidade, tamanho da imagem, legendas, velocidade, volume) e na pausa dos jogos (som, vibração, gráficos, tela, FPS). ⚙️ Ajustes no topo (visual, tamanho da tela, legendas, enquadramento).
+
 ## Canais (v1.6)
 - Catálogo v3: 71 itens, 64 tocando dentro do app (IDs oficiais confirmados por pesquisa). Novas categorias: Humor e Entretenimento; Rádios em Música/Notícias. Sem ID ainda: Band (@BandTVOficial), Times Brasil, TV Evangelizar.
 

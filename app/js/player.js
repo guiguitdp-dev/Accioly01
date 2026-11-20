@@ -48,17 +48,18 @@
     el.innerHTML =
       '<div class="msg" id="pmsg"><div class="box"><div class="spinner"></div><div>Sintonizando <b>' + esc(it.name) + '</b>…</div></div></div>' +
       '<div class="osd" id="osd">' +
-        '<div class="title"><span class="live" id="plabel">AO VIVO</span>' + esc(it.name) + '</div>' +
+        '<div class="title"><span class="live" id="plabel">AO VIVO</span>' + esc(it.name) + '<span class="qbadge" id="pq"></span></div>' +
         '<div class="sub">' + esc(it.desc || '') + '</div>' +
         zapHint() +
         '<div class="inline">' +
           '<button class="btn ghost focusable" data-a="back">◀ Voltar</button>' +
           '<button class="btn ghost focusable" data-a="prev">▲ Canal anterior</button>' +
           '<button class="btn ghost focusable" data-a="next">▼ Próximo canal</button>' +
+          '<button class="btn primary focusable" data-a="opts">⚙️ Opções</button>' +
           '<button class="btn ghost focusable" data-a="fav">' + (App.isFav(it.id) ? '★ Favorito' : '☆ Favoritar') + '</button>' +
           (it.fallback || it.handle || it.channelId ? '<button class="btn ghost focusable" data-a="site">↗ ' + (it.android ? 'Abrir no app oficial' : 'Abrir no site oficial') + '</button>' : '') +
         '</div>' +
-        '<div class="note" style="margin-top:.8rem">▲/▼ troca de canal · OK abre este menu · VOLTAR sai</div>' +
+        '<div class="note" style="margin-top:.8rem">▲/▼ troca de canal · OK abre este menu · ⚙️ qualidade, tamanho, legendas e volume · VOLTAR sai</div>' +
       '</div>';
     el.querySelectorAll('[data-a]').forEach(function (b) {
       b.addEventListener('click', function () { doAction(b.getAttribute('data-a')); });
@@ -75,6 +76,15 @@
     if (n < 2) return '';
     var prev = state.list[(state.index - 1 + n) % n], next = state.list[(state.index + 1) % n];
     return '<div class="zap">▲ ' + esc(prev.name) + ' &nbsp;·&nbsp; ▼ ' + esc(next.name) + '</div>';
+  }
+
+  function setQuality(txt) { var q = state && state.el.querySelector('#pq'); if (q) { q.textContent = txt || ''; q.style.display = txt ? '' : 'none'; } }
+
+  function openOptions() {
+    clearTimeout(state.timer);
+    OptionsSheet.open(state.el, 'Opções de vídeo', MediaOptions.rows({
+      video: state.video, hls: state.hls, ytp: state.ytp, frameEl: state.video || state.iframe, iframe: !state.video, live: state.video ? true : state.live
+    }), function () { if (state) { showOsd(); Input.focus(state.el.querySelector('[data-a=opts]')); } });
   }
 
   function setMsg(html) {
@@ -98,14 +108,17 @@
     v.controls = false;
     state.el.insertBefore(v, state.el.firstChild);
     state.video = v;
-    v.addEventListener('playing', function () { setMsg(null); });
+    v.addEventListener('playing', function () { setMsg(null); setQuality(MediaOptions.qualityLabel(v.videoHeight)); });
+    v.addEventListener('resize', function () { setQuality(MediaOptions.qualityLabel(v.videoHeight)); });
     v.addEventListener('error', function () { failed(it); });
+    MediaOptions.applyFrame(v, false);
+    MediaOptions.autoCaptions(v);
     var native = v.canPlayType('application/vnd.apple.mpegurl');
     if (native) { v.src = it.url; v.play().catch(function () {}); return; }
     loadHls().then(function (Hls) {
       if (!state || current() !== it) return;
       if (!Hls.isSupported()) { v.src = it.url; return; }
-      var hls = new Hls({ lowLatencyMode: false, backBufferLength: 30 });
+      var hls = new Hls({ lowLatencyMode: false, backBufferLength: 30, capLevelToPlayerSize: true, startLevel: -1 });
       state.hls = hls;
       var fatalCount = 0;
       hls.on(Hls.Events.ERROR, function (_e, data) {
@@ -147,7 +160,10 @@
       f.id = 'chiframe';
       f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
       f.referrerPolicy = 'strict-origin-when-cross-origin';
-      f.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'autoplay=1&controls=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&origin=' + encodeURIComponent(location.origin);
+      f.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'autoplay=1&controls=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&hl=pt' +
+        (Prefs.get('legenda') === 'pt' ? '&cc_load_policy=1&cc_lang_pref=pt' : '') + '&origin=' + encodeURIComponent(location.origin);
+      state.live = !!yt.live;
+      MediaOptions.applyFrame(f, true);
       f.addEventListener('load', function () { setMsg(null); });
       state.el.insertBefore(f, state.el.firstChild);
       state.iframe = f;
@@ -155,9 +171,11 @@
       if (window.loadYouTubeApi) window.loadYouTubeApi().then(function () {
         if (!state || state.iframe !== f) return;
         try {
-          new YT.Player(f, { events: { onError: function () {
-            failed(it, 'Esta transmissão só pode ser vista no YouTube (a emissora bloqueou a exibição em outros apps).');
-          } } });
+          state.ytp = new YT.Player(f, { events: {
+            onError: function () { failed(it, 'Esta transmissão só pode ser vista no YouTube (a emissora bloqueou a exibição em outros apps).'); },
+            onPlaybackQualityChange: function (e) { setQuality(MediaOptions.ytQualityLabel(e.data)); },
+            onReady: function () { if (Prefs.get('legenda') === 'pt') MediaOptions.captionsYT(state && state.ytp, true); }
+          } });
         } catch (e) {}
       }).catch(function () {});
     });
@@ -170,6 +188,8 @@
     if (state.hls) { try { state.hls.destroy(); } catch (e) {} state.hls = null; }
     if (state.video) { try { state.video.pause(); state.video.removeAttribute('src'); state.video.load(); } catch (e) {} state.video = null; }
     if (state.iframe) { state.iframe.src = 'about:blank'; state.iframe = null; }
+    state.ytp = null;
+    if (window.OptionsSheet && OptionsSheet.isOpen()) OptionsSheet.close();
   }
 
   function showOsd(stay) {
@@ -200,6 +220,7 @@
   function doAction(a) {
     var it = current();
     if (a === 'back') return close();
+    if (a === 'opts') return openOptions();
     if (a === 'prev') return zap(-1);
     if (a === 'next') return zap(1);
     if (a === 'fav') { App.toggleFav(it.id); var b = state.el.querySelector('[data-a=fav]'); if (b) b.textContent = App.isFav(it.id) ? '★ Favorito' : '☆ Favoritar'; return; }
@@ -233,6 +254,8 @@
     state = null;
     if (!silent && window.App) App.restoreFocus();
   }
+
+  window.addEventListener('resize', function () { if (state) MediaOptions.applyFrame(state.video || state.iframe, !state.video); });
 
   window.Player = { open: open, close: close, isOpen: function () { return !!state; } };
 })();

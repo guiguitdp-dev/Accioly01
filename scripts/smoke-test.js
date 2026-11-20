@@ -77,8 +77,18 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
     await page.keyboard.press('Escape');
     await page.waitForSelector('text=Pausado');
     ok('VOLTAR pausa o jogo', true);
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('.sheet');
+    ok('pausa tem Opções do jogo (som, gráficos, tela, FPS)', await page.isVisible('.sheet >> text=Gráficos'));
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
     await page.keyboard.press('ArrowRight');
-    await page.keyboard.press('ArrowRight');
+    ok('opção muda com ◀ ▶ do controle', /Máximo|Leve/.test(await page.textContent('.sheet .opt:nth-of-type(3)')));
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('.sheet', { state: 'detached' });
+    for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowDown');
     await page.keyboard.press('Enter');
     await page.waitForSelector('.game-screen', { state: 'detached' });
     ok('sair do jogo volta para o app', await page.isVisible('.topbar'));
@@ -95,6 +105,12 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
     await page.waitForSelector('#player');
     ok('canal ao vivo abre o player', await page.isVisible('#player'));
     await shot('04-player');
+    await page.click('#player [data-a=opts]');
+    await page.waitForSelector('#player .sheet');
+    ok('player tem opções de qualidade, tamanho, legendas e volume', await page.isVisible('.sheet >> text=Tamanho da imagem') && await page.isVisible('.sheet >> text=Volume'));
+    await shot('04b-opcoes');
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('.sheet', { state: 'detached' });
     await page.keyboard.press('Escape');
     await page.waitForSelector('#player', { state: 'detached' });
     ok('VOLTAR fecha o player', true);
@@ -126,6 +142,13 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
 
     await page.click('.tab[data-tab=conta]');
     ok('Minha Conta mostra código de indicação', await page.isVisible('text=Seu código'));
+    await page.click('[data-act=ajustes]');
+    await page.waitForSelector('.sheet');
+    await page.click('.sheet .opt:nth-of-type(2)');
+    ok('Ajustes: tamanho da tela grande aplica na hora', (await page.getAttribute('html', 'data-ui')) === 'grande');
+    await page.click('.sheet .opt:nth-of-type(2)'); await page.click('.sheet .opt:nth-of-type(2)');
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('.sheet', { state: 'detached' });
 
     console.log('Painel do Dono:');
     const adm = await ctx.newPage();

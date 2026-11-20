@@ -20,7 +20,24 @@
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
+  // Vibração: controle de videogame (quando suporta) e celular
+  function rumble(ms, strength) {
+    if (window.Prefs && !Prefs.get('vibra')) return;
+    try {
+      var pads = navigator.getGamepads ? navigator.getGamepads() : [];
+      for (var i = 0; i < pads.length; i++) {
+        var gp = pads[i];
+        if (gp && gp.vibrationActuator && gp.vibrationActuator.playEffect)
+          gp.vibrationActuator.playEffect('dual-rumble', { duration: ms || 120, strongMagnitude: strength || 0.6, weakMagnitude: (strength || 0.6) / 2 });
+      }
+      if (navigator.vibrate && ('ontouchstart' in window)) navigator.vibrate(Math.min(ms || 80, 120));
+    } catch (e) {}
+  }
+
   function beep(freq, dur, type, vol) {
+    if (window.Prefs && !Prefs.get('som')) return;
+    // explosões e danos (som grave) também vibram o controle
+    if (type === 'sawtooth' && freq < 200) rumble(Math.round((dur || 0.1) * 600), 0.7);
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       var o = audioCtx.createOscillator(), g = audioCtx.createGain();
@@ -104,15 +121,17 @@
     canvas.addEventListener('pointerdown', function (e) { if (run && run.game && run.game.tap && !run.paused && !run.over) { var p = toCanvas(e); run.game.tap(p.x, p.y); } });
     canvas.addEventListener('pointermove', function (e) { if (run && run.game && run.game.aim) { var p = toCanvas(e); run.game.aim(p.x, p.y); } });
     function fit() {
-      var s = Math.min(window.innerWidth / W, window.innerHeight / H);
+      var cover = window.Prefs && Prefs.get('jogoTela') === 'cheia';
+      var s = (cover ? Math.max : Math.min)(window.innerWidth / W, window.innerHeight / H);
       canvas.style.width = Math.floor(W * s) + 'px';
       canvas.style.height = Math.floor(H * s) + 'px';
     }
     fit();
     window.addEventListener('resize', fit);
-    var ctx = canvas.getContext('2d');
+    var ctx = canvas.getContext('2d', { alpha: false }) || canvas.getContext('2d');
+    setLeve(ctx, window.Prefs && Prefs.leve());
 
-    run = { def: def, el: el, ctx: ctx, paused: false, over: false, raf: 0, last: 0, onExit: onExit, fit: fit, score: 0 };
+    run = { def: def, el: el, ctx: ctx, paused: false, over: false, raf: 0, last: 0, onExit: onExit, fit: fit, score: 0, frames: 0, fpsT: 0, fps: 60, slow: 0 };
 
     var api = {
       W: W, H: H,
@@ -126,8 +145,11 @@
       best: function () { return getBest(def.id); },
       hud: function (left, right) {
         var l = el.querySelector('#ghl'), r = el.querySelector('#ghr');
-        if (l) l.textContent = left || ''; if (r) r.textContent = right || '';
+        if (l) l.textContent = left || '';
+        if (r) r.textContent = (right || '') + (window.Prefs && Prefs.get('fps') ? '   ' + run.fps + ' FPS' : '');
       },
+      rumble: rumble,
+      leve: function () { return !!(window.Prefs && Prefs.leve()); },
       score: function (n) { run.score = n; },
       firing: function () { var p = Input.pad(0); return !!(Input.held.ok || (p && p.ok)); },
       touch: isTouch(),
@@ -139,10 +161,26 @@
     run.raf = requestAnimationFrame(loop);
   }
 
+  // Modo leve: desliga o brilho (shadowBlur), o efeito mais pesado em TVs/TV Box simples
+  function setLeve(ctx, on) {
+    try {
+      if (on) Object.defineProperty(ctx, 'shadowBlur', { configurable: true, get: function () { return 0; }, set: function () {} });
+      else delete ctx.shadowBlur;
+    } catch (e) {}
+  }
+
   function loop(t) {
     if (!run) return;
     var dt = run.last ? Math.min(0.05, (t - run.last) / 1000) : 0;
     run.last = t;
+    // mede FPS; se o aparelho não aguenta, liga o modo leve sozinho (no modo automático)
+    run.frames++; run.fpsT += dt;
+    if (run.fpsT >= 1) {
+      run.fps = Math.round(run.frames / run.fpsT); run.frames = 0; run.fpsT = 0;
+      if (!run.paused && run.fps < 40 && window.Prefs && Prefs.get('perf') === 'auto' && !Prefs.leve()) {
+        if (++run.slow >= 2) { Prefs.set('autoLeve', true); setLeve(run.ctx, true); }
+      } else run.slow = 0;
+    }
     if (!run.paused && !run.over && run.game.update) run.game.update(dt);
     run.ctx.save();
     if (run.game.draw) run.game.draw(run.ctx);
@@ -154,7 +192,7 @@
     var m = run.el.querySelector('#gmenu');
     m.innerHTML = '<div class="modal-bg"><div class="modal" style="text-align:center"><h2>' + esc(title) + '</h2>' +
       (sub ? '<p class="note" style="font-size:1.1rem">' + sub + '</p>' : '') +
-      '<div class="inline" style="justify-content:center;margin-top:1rem">' +
+      '<div class="stack gmenu-btns" style="margin:1rem auto 0;max-width:24rem">' +
       buttons.map(function (b, i) { return '<button class="btn ' + (i === 0 ? 'primary' : 'ghost') + ' focusable" data-i="' + i + '">' + esc(b.label) + '</button>'; }).join('') +
       '</div></div></div>';
     m.querySelectorAll('button').forEach(function (btn) {
@@ -170,8 +208,23 @@
     menu('Pausado', esc(run.def.name), [
       { label: '▶ Continuar', fn: function () { closeMenu(); run.paused = false; } },
       { label: '↻ Reiniciar', fn: restart },
+      { label: '⚙️ Opções', fn: gameOptions },
       { label: '✕ Sair do jogo', fn: function () { stop(); } }
     ]);
+  }
+
+  function gameOptions() {
+    if (!window.OptionsSheet) return;
+    var perfVals = ['auto', 'alto', 'leve'];
+    OptionsSheet.open(run.el, 'Opções do jogo', [
+      { label: 'Som', values: ['Ligado', 'Desligado'], index: Prefs.get('som') ? 0 : 1, onChange: function (i) { Prefs.set('som', i === 0); } },
+      { label: 'Vibração do controle', values: ['Ligada', 'Desligada'], index: Prefs.get('vibra') ? 0 : 1, onChange: function (i) { Prefs.set('vibra', i === 0); if (!i) rumble(150, 0.8); } },
+      { label: 'Gráficos', values: ['Automático', 'Máximo (brilho e efeitos)', 'Leve (TV mais simples)'], index: Math.max(0, perfVals.indexOf(Prefs.get('perf'))),
+        note: 'Leve deixa o jogo mais rápido em TVs e TV Box simples',
+        onChange: function (i) { Prefs.set('perf', perfVals[i]); if (perfVals[i] !== 'auto') Prefs.set('autoLeve', false); setLeve(run.ctx, Prefs.leve()); } },
+      { label: 'Tamanho da tela', values: ['Ajustar (mostra tudo)', 'Tela cheia (corta as bordas)'], index: Prefs.get('jogoTela') === 'cheia' ? 1 : 0, onChange: function (i) { Prefs.set('jogoTela', i ? 'cheia' : 'ajustar'); run.fit(); } },
+      { label: 'Mostrar FPS', values: ['Não', 'Sim'], index: Prefs.get('fps') ? 1 : 0, onChange: function (i) { Prefs.set('fps', !!i); } }
+    ], function () { if (run) Input.focus(run.el.querySelector('#gmenu button')); });
   }
 
   function restart() {
@@ -197,6 +250,7 @@
 
   function onAction(a, src) {
     if (!run) return false;
+    if (window.OptionsSheet && OptionsSheet.isOpen()) return true;
     if (menuOpen()) {
       if (a === 'ok') { var f = document.activeElement; if (f && run.el.contains(f)) f.click(); }
       else if (a === 'back') { if (run.paused) { closeMenu(); run.paused = false; } else if (run.over) stop(); }
