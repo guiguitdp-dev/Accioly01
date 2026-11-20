@@ -46,7 +46,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v6
-      - name: Montar o site (vitrine: o dono libera tudo com o código do dono)
+      - name: "Montar o site (vitrine; o dono libera tudo com o código do dono)"
         env:
           ACCIOLY_WHATSAPP: ${{ vars.ACCIOLY_WHATSAPP }}
           ACCIOLY_SITE: ${{ vars.ACCIOLY_SITE }}
