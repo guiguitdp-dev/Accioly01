@@ -7,6 +7,10 @@
  *
  * Para criar um jogo novo: GameHub.register({ id, name, emoji, color, desc, help, premium, create(api) })
  * create(api) devolve { update(dt), draw(ctx), action(a, source) }.
+ *   Opcionais: back() (true = tratou o VOLTAR), destroy(), tap(x, y) (toque/clique no
+ *   canvas, em coordenadas 1280x720), aim(x, y) (mouse/dedo movendo — jogos de mira).
+ *   api.firing() = botão de tiro/OK segurado (teclado, controle remoto, gamepad ou toque).
+ * No celular/tablet aparece um controle na tela (direcional + botão A + pausa).
  */
 (function () {
   var W = 1280, H = 720;
@@ -52,6 +56,35 @@
 
   function register(def) { games.push(def); }
 
+  // Celular/tablet: controle na tela
+  function isTouch() { return ('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0; }
+  function touchPad(def) {
+    if (!isTouch()) return '';
+    var b = function (k, label, cls) { return '<button class="tbtn ' + (cls || '') + '" data-k="' + k + '">' + label + '</button>'; };
+    return '<div class="tpad" aria-hidden="true">' +
+      '<div class="tdir">' + b('up', '▲', 'tu') + b('left', '◀', 'tl') + b('right', '▶', 'tr') + b('down', '▼', 'td') + '</div>' +
+      '<div class="tact">' + b('ok', def.fireLabel || 'A', 'ta') + '</div>' +
+      b('back', '⏸', 'tp') + '</div>';
+  }
+  function bindTouch(el) {
+    el.querySelectorAll('.tbtn').forEach(function (btn) {
+      var k = btn.getAttribute('data-k');
+      var down = function (e) {
+        e.preventDefault();
+        if (btn.setPointerCapture && e.pointerId != null) try { btn.setPointerCapture(e.pointerId); } catch (x) {}
+        btn.classList.add('on');
+        if (k !== 'back') Input.held[k] = true;
+        Input.emit(k, 'touch');
+      };
+      var up = function (e) { if (e) e.preventDefault(); btn.classList.remove('on'); if (k !== 'back') Input.held[k] = false; };
+      btn.addEventListener('pointerdown', down);
+      btn.addEventListener('pointerup', up);
+      btn.addEventListener('pointercancel', up);
+      btn.addEventListener('lostpointercapture', up);
+      btn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    });
+  }
+
   function start(id, onExit) {
     var def = games.filter(function (g) { return g.id === id; })[0];
     if (!def) return;
@@ -60,10 +93,16 @@
     el.className = 'game-screen';
     el.innerHTML = '<canvas width="' + W + '" height="' + H + '"></canvas>' +
       '<div class="game-hud"><span id="ghl"></span><span id="ghr"></span></div>' +
-      '<div class="game-help">' + esc(def.help || '') + ' · VOLTAR pausa</div>' +
+      '<div class="game-help">' + esc(def.help || '') + (isTouch() ? ' · ⏸ pausa' : ' · VOLTAR pausa') + '</div>' +
+      touchPad(def) +
       '<div id="gmenu"></div>';
     document.body.appendChild(el);
     var canvas = el.querySelector('canvas');
+    bindTouch(el);
+    // Toque/clique e mira no canvas (jogos de mira usam tap/aim)
+    function toCanvas(e) { var r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; }
+    canvas.addEventListener('pointerdown', function (e) { if (run && run.game && run.game.tap && !run.paused && !run.over) { var p = toCanvas(e); run.game.tap(p.x, p.y); } });
+    canvas.addEventListener('pointermove', function (e) { if (run && run.game && run.game.aim) { var p = toCanvas(e); run.game.aim(p.x, p.y); } });
     function fit() {
       var s = Math.min(window.innerWidth / W, window.innerHeight / H);
       canvas.style.width = Math.floor(W * s) + 'px';
@@ -90,6 +129,8 @@
         if (l) l.textContent = left || ''; if (r) r.textContent = right || '';
       },
       score: function (n) { run.score = n; },
+      firing: function () { var p = Input.pad(0); return !!(Input.held.ok || (p && p.ok)); },
+      touch: isTouch(),
       gameOver: function (finalScore, title) { gameOver(finalScore, title); }
     };
     run.game = def.create(api);
@@ -175,6 +216,7 @@
     if (run.off) run.off();
     window.removeEventListener('resize', run.fit);
     if (run.game && run.game.destroy) run.game.destroy();
+    ['up', 'down', 'left', 'right', 'ok'].forEach(function (k) { Input.held[k] = false; });
     if (run.el.parentNode) run.el.parentNode.removeChild(run.el);
     var cb = run.onExit;
     run = null;

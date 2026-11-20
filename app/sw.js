@@ -1,9 +1,10 @@
 /* Service worker: deixa o app abrir rápido e os jogos funcionarem mesmo com internet ruim. */
-var CACHE = 'accioly-play-v4';
+var CACHE = 'accioly-play-v5';
 var SHELL = ['./', 'index.html', 'css/app.css', 'js/config.js', 'js/catalog.js', 'js/input.js', 'js/player.js', 'js/app.js', 'js/ads.js', 'js/media.js', 'js/localmedia.js',
   'js/games/hub.js', 'js/games/cobrinha.js', 'js/games/quebrablocos.js', 'js/games/pingpong.js', 'js/games/meteoros.js',
   'js/games/memoria.js', 'js/games/quiz.js', 'js/games/velha.js', 'js/games/corrida.js',
-  'js/games/frutas.js', 'js/games/blocos.js', 'js/games/penaltis.js', 'js/games/palavra.js', 'js/games/capivara.js', 'icon.svg', 'manifest.webmanifest'];
+  'js/games/frutas.js', 'js/games/blocos.js', 'js/games/penaltis.js', 'js/games/palavra.js', 'js/games/capivara.js',
+  'js/games/esquadrilha.js', 'js/games/comando.js', 'js/games/mira.js', 'js/games/operacao3d.js', 'icon.svg', 'manifest.webmanifest'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
