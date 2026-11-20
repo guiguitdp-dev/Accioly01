@@ -26,6 +26,7 @@ const { buildPix } = require('./lib/pix');
 const health = require('./lib/health');
 const mercadopago = require('./lib/mercadopago');
 const media = require('./lib/media');
+const news = require('./lib/news');
 
 const ROOT = path.resolve(__dirname, '..');
 const APP_DIR = path.join(ROOT, 'app');
@@ -110,6 +111,7 @@ if (!D.admins.length) {
 function settings() { return D.settings; }
 function ytKey() { return process.env.YOUTUBE_API_KEY || D.settings.youtubeApiKey || ''; }
 const MEDIA_MOCK = !!process.env.MEDIA_MOCK;
+const NEWS_MOCK = !!process.env.NEWS_MOCK || MEDIA_MOCK;
 // IDs de TESTE oficiais do Google (usados enquanto o modo de teste estiver ligado)
 const ADMOB_TEST = { interstitial: 'ca-app-pub-3940256099942544/1033173712', rewarded: 'ca-app-pub-3940256099942544/5224354917' };
 const ADMOB_UNIT = /^ca-app-pub-\d{10,20}\/\d{5,15}$/;
@@ -420,7 +422,7 @@ route('POST', '/api/events', (req, res, body) => {
   if (limited(req, 'ev', 300, 600e3)) return send(res, 200, { ok: true });
   const type = String(body.type || '').slice(0, 12).replace(/[^a-z]/g, '');
   const itemId = String(body.id || '').slice(0, 80).replace(/[^\w\-.:/@]/g, '');
-  if (['play', 'game', 'open', 'score', 'ad', 'yt', 'music'].includes(type) && itemId) {
+  if (['play', 'game', 'open', 'score', 'ad', 'yt', 'music', 'news', 'demo'].includes(type) && itemId) {
     if (type !== 'score') { bump(type + ':' + itemId, 1); db.save(); }
   }
   send(res, 200, { ok: true });
@@ -467,6 +469,15 @@ route('GET', '/api/media/search', async (req, res, body, params, query) => {
     media.audiusSearch(q).then((r) => { out.free = r; }).catch((e) => { out.errors.free = e.message; })
   ]);
   send(res, 200, out);
+});
+
+// ---------------- Notícias do dia a dia (RSS oficiais, cache de 15 min) ----------------
+route('GET', '/api/news', async (req, res) => {
+  if (NEWS_MOCK) return send(res, 200, news.mock());
+  try {
+    const r = await news.get();
+    send(res, 200, { updatedAt: r.updatedAt, total: r.total, top: r.top, sections: r.sections }, { 'Cache-Control': 'public, max-age=300' });
+  } catch (e) { fail(res, 503, 'Notícias indisponíveis agora.'); }
 });
 
 // ---------------- Painel do Dono ----------------

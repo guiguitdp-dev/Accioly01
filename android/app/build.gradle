@@ -9,15 +9,32 @@ def appUrl = (project.findProperty('appUrl') ?: '').toString().replace('"', '')
 // Build com o seu: gradle assembleDebug -PadmobAppId=ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY
 def admobAppId = (project.findProperty('admobAppId') ?: 'ca-app-pub-3940256099942544~3347511713').toString().trim()
 
+// Vitrine (APK de demonstração para mostrar a outras pessoas): -Pvitrine=true
+// com o WhatsApp e o site de vendas: -PbuyWhatsapp=5511999999999 -PbuySite=https://seusite.com.br
+def vitrine = (project.findProperty('vitrine') ?: 'false').toString() == 'true'
+def buyWhatsapp = (project.findProperty('buyWhatsapp') ?: '').toString().replaceAll('[^0-9]', '')
+def buySite = (project.findProperty('buySite') ?: '').toString().replaceAll("['\"\\\\\\s]", '')
+
 // O app web (pasta ../app) vai DENTRO do APK, em modo dono (tudo liberado, sem servidor)
 def webAssetsDir = layout.buildDirectory.dir('generated/webapp')
 tasks.register('copyWebApp', Copy) {
+    inputs.property('vitrine', vitrine)
+    inputs.property('buyWhatsapp', buyWhatsapp)
+    inputs.property('buySite', buySite)
     from(rootProject.file('../app')) {
         exclude 'sw.js'
     }
     into(webAssetsDir.map { it.dir('app') })
     filesMatching('js/config.js') {
-        filter { String line -> line.replace("localMode: 'auto'", "localMode: true") }
+        filter { String line ->
+            line = line.replace("localMode: 'auto'", "localMode: true")
+            if (vitrine) {
+                line = line.replace("demo: false", "demo: true")
+                        .replace("buyWhatsapp: ''", "buyWhatsapp: '" + buyWhatsapp + "'")
+                        .replace("buySite: ''", "buySite: '" + buySite + "'")
+            }
+            return line
+        }
     }
 }
 tasks.named('preBuild') { dependsOn 'copyWebApp' }
@@ -30,8 +47,8 @@ android {
         applicationId 'com.acciolyplay.tv'
         minSdk 21
         targetSdk 34
-        versionCode 4
-        versionName '1.3'
+        versionCode 5
+        versionName '1.4'
         buildConfigField 'String', 'APP_URL', "\"${appUrl}\""
         manifestPlaceholders = [admobAppId: admobAppId]
     }
