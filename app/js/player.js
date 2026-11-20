@@ -22,9 +22,17 @@
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
+  // Timer para desligar (vale para todos os canais até acabar)
+  var sleepAt = 0;
+  setInterval(function () {
+    if (sleepAt && Date.now() >= sleepAt) { sleepAt = 0; if (state) { close(); App.toast('😴 Desligado pelo timer. Boa noite!'); } }
+  }, 15000);
+
   function open(list, index) {
+    var prevId = state && state.list[state.index] ? state.list[state.index].id : null;
     close(true);
-    state = { list: list, index: index };
+    state = { list: list, index: index, lastId: prevId, num: '' };
+    document.addEventListener('keydown', onDigit, true);
     var el = document.createElement('div');
     el.className = 'screen';
     el.id = 'player';
@@ -48,18 +56,20 @@
     el.innerHTML =
       '<div class="msg" id="pmsg"><div class="box"><div class="spinner"></div><div>Sintonizando <b>' + esc(it.name) + '</b>…</div></div></div>' +
       '<div class="osd" id="osd">' +
-        '<div class="title"><span class="live" id="plabel">AO VIVO</span>' + esc(it.name) + '<span class="qbadge" id="pq"></span></div>' +
-        '<div class="sub">' + esc(it.desc || '') + '</div>' +
+        '<div class="title">' + (App.channelNumber(it.id) ? '<span class="pnum">' + App.channelNumber(it.id) + '</span>' : '') + '<span class="live" id="plabel">AO VIVO</span>' + esc(it.name) + '<span class="qbadge" id="pq"></span></div>' +
+        '<div class="sub">' + (App.capaTitle(it.id) ? '▶ Agora: ' + esc(App.capaTitle(it.id)) : esc(it.desc || '')) + (sleepAt ? ' · 😴 desliga em ' + Math.max(1, Math.round((sleepAt - Date.now()) / 60000)) + ' min' : '') + '</div>' +
         zapHint() +
         '<div class="inline">' +
           '<button class="btn ghost focusable" data-a="back">◀ Voltar</button>' +
           '<button class="btn ghost focusable" data-a="prev">▲ Canal anterior</button>' +
           '<button class="btn ghost focusable" data-a="next">▼ Próximo canal</button>' +
           '<button class="btn primary focusable" data-a="opts">⚙️ Opções</button>' +
+          '<button class="btn ghost focusable" data-a="guia">📋 Guia</button>' +
+          (state.lastId ? '<button class="btn ghost focusable" data-a="last">↩ Último canal</button>' : '') +
           '<button class="btn ghost focusable" data-a="fav">' + (App.isFav(it.id) ? '★ Favorito' : '☆ Favoritar') + '</button>' +
           (it.fallback || it.handle || it.channelId ? '<button class="btn ghost focusable" data-a="site">↗ ' + (it.android ? 'Abrir no app oficial' : 'Abrir no site oficial') + '</button>' : '') +
         '</div>' +
-        '<div class="note" style="margin-top:.8rem">▲/▼ troca de canal · OK abre este menu · ⚙️ qualidade, tamanho, legendas e volume · VOLTAR sai</div>' +
+        '<div class="note" style="margin-top:.8rem">▲/▼ troca de canal · números do controle vão direto ao canal · ◀ abre o guia · OK abre este menu · VOLTAR sai</div>' +
       '</div>';
     el.querySelectorAll('[data-a]').forEach(function (b) {
       b.addEventListener('click', function () { doAction(b.getAttribute('data-a')); });
@@ -82,9 +92,14 @@
 
   function openOptions() {
     clearTimeout(state.timer);
-    OptionsSheet.open(state.el, 'Opções de vídeo', MediaOptions.rows({
+    var SL = [0, 15, 30, 60, 90, 120];
+    var rows = MediaOptions.rows({
       video: state.video, hls: state.hls, ytp: state.ytp, frameEl: state.video || state.iframe, iframe: !state.video, live: state.video ? true : state.live
-    }), function () { if (state) { showOsd(); Input.focus(state.el.querySelector('[data-a=opts]')); } });
+    });
+    rows.push({ label: '😴 Desligar em', values: SL.map(function (m) { return m ? m + ' min' : 'Não desligar'; }), index: 0,
+      note: sleepAt ? 'Programado: desliga em ' + Math.max(1, Math.round((sleepAt - Date.now()) / 60000)) + ' min' : 'Fecha o canal sozinho (bom para dormir)',
+      onChange: function (i) { sleepAt = SL[i] ? Date.now() + SL[i] * 60000 : 0; App.toast(SL[i] ? '😴 Desliga em ' + SL[i] + ' minutos' : 'Timer desligado'); } });
+    OptionsSheet.open(state.el, 'Opções de vídeo', rows, function () { if (state) { showOsd(); Input.focus(state.el.querySelector('[data-a=opts]')); } });
   }
 
   function setMsg(html) {
@@ -208,6 +223,7 @@
   function zap(delta) {
     var n = state.list.length;
     var i = state.index;
+    state.lastId = current().id;
     for (var k = 0; k < n; k++) {
       i = (i + delta + n) % n;
       if (state.list[i].type !== 'link') break;
@@ -221,6 +237,8 @@
     var it = current();
     if (a === 'back') return close();
     if (a === 'opts') return openOptions();
+    if (a === 'guia') return openGuide();
+    if (a === 'last') return goToId(state.lastId);
     if (a === 'prev') return zap(-1);
     if (a === 'next') return zap(1);
     if (a === 'fav') { App.toggleFav(it.id); var b = state.el.querySelector('[data-a=fav]'); if (b) b.textContent = App.isFav(it.id) ? '★ Favorito' : '☆ Favoritar'; return; }
@@ -229,7 +247,14 @@
 
   function onAction(a) {
     if (!state) return false;
+    if (state.guide) {
+      if (a === 'back' || a === 'right') { closeGuide(); return true; }
+      if (a === 'up' || a === 'down') { Input.move(a, state.guide); return true; }
+      if (a === 'ok') { var g = document.activeElement; if (g && state.guide.contains(g)) g.click(); return true; }
+      return true;
+    }
     if (a === 'back') { close(); return true; }
+    if (!osdVisible() && a === 'left') { openGuide(); return true; }
     if (!osdVisible()) {
       if (a === 'up') { zap(-1); return true; }
       if (a === 'down') { zap(1); return true; }
@@ -245,8 +270,73 @@
     return true;
   }
 
+  // Vai para um canal pela identificação (usado pelo número, guia e "último canal")
+  function goToId(id) {
+    if (!id) return;
+    var all = App.allChannels(), i;
+    for (i = 0; i < all.length; i++) if (all[i].id === id) break;
+    if (i >= all.length) return;
+    var acc = App.access();
+    if (!acc.tv) { close(); return App.openPaywall('Seu teste terminou. Assine para continuar assistindo.'); }
+    var old = current().id;
+    state.list = all; state.index = i; state.lastId = old;
+    App.pushRecent(id);
+    render();
+    App.toast('📺 ' + App.channelNumber(id) + ' · ' + current().name);
+  }
+
+  // Números do controle: digita "12" e vai para o canal 12 (como na TV a cabo)
+  function onDigit(e) {
+    if (!state || state.guide || (window.OptionsSheet && OptionsSheet.isOpen())) return;
+    var k = e.key, d = /^[0-9]$/.test(k) ? k : (e.keyCode >= 96 && e.keyCode <= 105 ? String(e.keyCode - 96) : null);
+    if (d === null) return;
+    e.preventDefault(); e.stopPropagation();
+    state.num = (state.num + d).slice(0, 3);
+    var box = state.el.querySelector('#pnumin');
+    if (!box) { box = document.createElement('div'); box.id = 'pnumin'; box.className = 'pnumin'; state.el.appendChild(box); }
+    box.textContent = state.num + (state.num.length < 3 ? '_' : '');
+    clearTimeout(state.numT);
+    var go = function () {
+      var n = parseInt(state.num, 10), all = App.allChannels();
+      state.num = ''; if (box.parentNode) box.parentNode.removeChild(box);
+      if (n >= 1 && n <= all.length) goToId(all[n - 1].id); else App.toast('Canal ' + n + ' não existe (vai até ' + all.length + ')');
+    };
+    if (state.num.length >= 3 || parseInt(state.num + '0', 10) > App.allChannels().length) go();
+    else state.numT = setTimeout(go, 1600);
+  }
+
+  // Guia rápido: lista de canais com o que está passando (◀ abre, OK troca)
+  function openGuide() {
+    if (state.guide) return;
+    clearTimeout(state.timer);
+    var o = state.el.querySelector('#osd'); if (o) o.classList.add('hide');
+    var all = App.allChannels(), cur = current().id;
+    var g = document.createElement('div');
+    g.className = 'pguide';
+    g.innerHTML = '<div class="pg-head">📋 Guia de canais <small>OK troca · ▶ fecha</small></div><div class="pg-list">' + all.map(function (c, i) {
+      var t = App.capaTitle(c.id), cov = App.coverUrl(c);
+      return '<button class="pg-item focusable' + (c.id === cur ? ' atual' : '') + '" data-id="' + esc(c.id) + '">' +
+        '<span class="pg-n">' + (i + 1) + '</span>' + (cov ? '<img src="' + esc(cov) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '<span class="pg-ph"></span>') +
+        '<span class="pg-t"><b>' + esc(c.name) + '</b><small>' + esc(t ? 'Agora: ' + t : (c.desc || '')) + '</small></span></button>';
+    }).join('') + '</div>';
+    state.el.appendChild(g);
+    state.guide = g;
+    g.querySelectorAll('.pg-item').forEach(function (b) { b.addEventListener('click', function () { var id = b.getAttribute('data-id'); closeGuide(); if (id !== current().id) goToId(id); }); });
+    var at = g.querySelector('.pg-item.atual') || g.querySelector('.pg-item');
+    if (at) { Input.focus(at); if (at.scrollIntoView) at.scrollIntoView({ block: 'center' }); }
+  }
+  function closeGuide() {
+    if (!state || !state.guide) return;
+    if (state.guide.parentNode) state.guide.parentNode.removeChild(state.guide);
+    state.guide = null;
+    showOsd();
+    var b = state.el.querySelector('[data-a=guia]'); if (b) Input.focus(b);
+  }
+
   function close(silent) {
     if (!state) return;
+    document.removeEventListener('keydown', onDigit, true);
+    clearTimeout(state.numT);
     destroyMedia();
     clearTimeout(state.timer);
     if (state.off) state.off();

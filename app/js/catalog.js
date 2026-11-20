@@ -20,7 +20,7 @@
  */
 (function (root) {
   var CATALOG = {
-    version: 3,
+    version: 4,
     categories: [
       { id: 'abertos', name: 'TV Aberta' },
       { id: 'noticias', name: 'Notícias 24h' },
@@ -185,6 +185,8 @@
       // ---------------- APPS GRÁTIS (abrem o app oficial) ----------------
       { id: 'plutotv', android: 'tv.pluto.android', name: 'Pluto TV', cat: 'filmes', type: 'link', color: '#0b0b0f',
         url: 'https://pluto.tv/br', desc: 'Muitos canais temáticos e filmes grátis e legais. Abre o app oficial.' },
+      { id: 'samsungtvplus', android: 'com.samsung.android.tvplus', name: 'Samsung TV Plus', cat: 'filmes', type: 'link', color: '#1428a0', mono: 'TV+',
+        url: 'https://www.samsung.com/br/televisions-home-theater/tvs/tvplus/', desc: 'Canais grátis 24h, inclusive novelas e esportes. Sem cadastro, nas TVs e celulares Samsung.' },
       { id: 'vix', name: 'ViX', cat: 'filmes', type: 'link', color: '#f97316',
         url: 'https://vix.com/pt-br', desc: 'Novelas, filmes e séries grátis. Abre o app oficial.' },
       { id: 'plex', android: 'com.plexapp.android', name: 'Plex', cat: 'filmes', type: 'link', color: '#e5a00d',

@@ -86,17 +86,25 @@
       var o = S.gameOverrides[g.id] || {};
       return { id: g.id, name: g.name, emoji: g.emoji, color: g.color, desc: g.desc, help: g.help, trending: !!g.trending, shooter: !!g.shooter,
         premium: o.premium != null ? o.premium : !!g.premium, enabled: o.enabled !== false, kind: 'game' };
-    }).filter(function (g) { return g.enabled; });
+    }).filter(function (g) { return g.enabled && (!isKids() || KIDS_GAMES.indexOf(g.id) >= 0); });
   }
 
-  function favs() { return lsGet('ap_favs', []); }
+  // ---------------- Perfis (cada pessoa da casa com seus favoritos; perfil Kids protegido por PIN) ----------------
+  var AVATARES = ['😀', '😎', '👩', '👨', '👵', '👴', '🧒', '👧', '🦸', '🐱', '🐶', '⚽'];
+  function perfis() { var p = lsGet('ap_perfis', null); return p && p.length ? p : [{ id: 'p1', nome: 'Principal', av: '😀', kids: false }]; }
+  function perfil() { var id = lsGet('ap_perfil', 'p1'), ps = perfis(); return ps.filter(function (p) { return p.id === id; })[0] || ps[0]; }
+  function pk(k) { var p = perfil(); return p.id === 'p1' ? k : k + '_' + p.id; }
+  function isKids() { return !!perfil().kids; }
+  function homeTab() { return isKids() ? 'kids' : 'inicio'; }
+
+  function favs() { return lsGet(pk('ap_favs'), []); }
   function isFav(id) { return favs().indexOf(id) >= 0; }
   function toggleFav(id) {
     var f = favs(), i = f.indexOf(id);
     if (i >= 0) { f.splice(i, 1); toast('Removido dos favoritos'); } else { f.unshift(id); toast('★ Adicionado aos favoritos'); }
-    lsSet('ap_favs', f.slice(0, 40));
+    lsSet(pk('ap_favs'), f.slice(0, 40));
   }
-  function pushRecent(id) { var r = lsGet('ap_recent', []).filter(function (x) { return x !== id; }); r.unshift(id); lsSet('ap_recent', r.slice(0, 12)); }
+  function pushRecent(id) { var r = lsGet(pk('ap_recent'), []).filter(function (x) { return x !== id; }); r.unshift(id); lsSet(pk('ap_recent'), r.slice(0, 12)); }
 
   function itemById(id) {
     var it = S.catalog.items.filter(function (x) { return x.id === id; })[0];
@@ -113,10 +121,13 @@
     else if (u && u.status === 'trial') pill = '<span class="pill trial">Teste grátis: ' + daysLeft(u.trialEndsAt) + ' dia(s)</span>';
     else if (u && u.status === 'active') pill = '<span class="pill active">Assinante até ' + fmtDate(u.paidUntil) + '</span>';
     else if (u) pill = '<span class="pill expired">Teste encerrado</span>';
-    var tabs = [['inicio', 'Início'], ['tv', 'TV ao Vivo'], ['noticias', '📰 Notícias'], ['filmes', 'Filmes'], ['midia', '🎵 Música'], ['jogos', 'Jogos'], ['kids', 'Kids 🧸'], ['conta', 'Conta']];
+    var tabs = isKids() ? [['kids', 'Início 🧸'], ['jogos', 'Jogos'], ['conta', 'Conta']]
+      : [['inicio', 'Início'], ['tv', 'TV ao Vivo'], ['noticias', '📰 Notícias'], ['filmes', 'Filmes'], ['midia', '🎵 Música'], ['jogos', 'Jogos'], ['kids', 'Kids 🧸'], ['conta', 'Conta']];
     return '<header class="topbar"><div class="brand">' + brandHtml() + '</div><nav class="tabs" data-row="tabs">' +
       tabs.map(function (t) { return '<button class="tab focusable' + (S.tab === t[0] ? ' active' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') +
       '</nav><div class="spacer"></div><span class="clock" id="clock">' + clockText() + '</span>' + pill +
+      '<button class="tab gear search focusable" data-tab="busca" aria-label="Buscar">🔎</button>' +
+      '<button class="tab gear avatar focusable" data-act="perfis" aria-label="Trocar de perfil" title="' + esc(perfil().nome) + '">' + perfil().av + '</button>' +
       '<button class="tab gear focusable" data-act="ajustes" aria-label="Ajustes">⚙️</button></header>';
   }
 
@@ -166,6 +177,7 @@
       (cov ? coverImg(cov) : '') + badge + (isFav(it.id) ? '<span class="fav">★</span>' : (isNew ? '<span class="ribbon">NOVO</span>' : '')) +
       (it.emoji ? '<span class="emoji">' + it.emoji + '</span>' : '<span class="mono' + ((it.mono || '').length > 3 ? ' sm' : '') + '">' + esc(it.mono || initials(it.name)) + '</span>') +
       '<span class="name">' + esc(it.name) + '</span>' + (sub ? '<span class="sub">' + esc(sub) + '</span>' : '') +
+      (it.kind !== 'game' && it.type !== 'link' && channelNumber(it.id) ? '<span class="chnum">' + channelNumber(it.id) + '</span>' : '') +
       (lock ? '<span class="lock">🔒</span>' : '') + '</button>';
   }
 
@@ -190,6 +202,11 @@
       .map(function (x) { return x.it; });
   }
 
+  // ---------------- Canais numerados (como na TV a cabo) ----------------
+  function allChannels() { return S.catalog.items.filter(function (i) { return i.enabled !== false && i.type !== 'link' && (!isKids() || i.cat === 'infantil' || i.cat === 'educacao'); }); }
+  function channelNumber(id) { var l = allChannels(); for (var i = 0; i < l.length; i++) if (l[i].id === id) return i + 1; return 0; }
+  function capaTitle(id) { var c = S.capas && S.capas[id]; return c && c.t ? c.t : ''; }
+
   // ---------------- Seções da tela inicial ----------------
   function playableOn(it) { return it && it.enabled !== false && it.status !== 'off' && it.type !== 'link'; }
   // Transmissões contínuas: sinais oficiais .m3u8 e canais 24h do YouTube
@@ -211,6 +228,14 @@
     rowsIndex.top10 = items;
     return '<section class="row top10row"><h2>⭐ Top 10 hoje no Accioly</h2><div class="track" data-row="top10">' +
       items.map(function (it, i) { return '<div class="rankwrap"><span class="rank" aria-hidden="true">' + (i + 1) + '</span>' + tile(it, 'top10') + '</div>'; }).join('') + '</div></section>';
+  }
+  // "Porque você assistiu/jogou..." (como nos grandes streamings)
+  function becauseRow(base) {
+    if (!base) return '';
+    var list;
+    if (base.kind === 'game') list = games().filter(function (g) { return g.id !== base.id && (g.shooter === base.shooter || g.trending === base.trending); });
+    else list = S.catalog.items.filter(function (i) { return i.id !== base.id && i.cat === base.cat && playableOn(i); });
+    return row('porque', '💡 Porque você ' + (base.kind === 'game' ? 'jogou ' : 'assistiu ') + base.name, list.slice(0, 12));
   }
   function familyItems() {
     var kidsCh = catItems('infantil').filter(playableOn).slice(0, 6);
@@ -310,6 +335,9 @@
     var q = [['data-tab="noticias"', '📰', 'Notícias do dia', 'de hora em hora', '#0ea5e9'],
       News.canSpeak() ? ['data-act="nbrief"', '🔊', 'Ouvir o resumo', 'notícias em voz alta', '#6366f1'] : null,
       ['data-tab="tv"', '📡', 'TV ao vivo', 'oficial e grátis', '#e11d48'],
+      ['data-act="multi"', '🖥️', 'Multitela', 'até 4 canais juntos', '#0f766e'],
+      ['data-act="surpresa"', '🎲', 'Surpreenda-me', 'um canal ao acaso', '#a855f7'],
+      ['data-tab="busca"', '🔎', 'Buscar', 'canal, jogo, notícia', '#334155'],
       ['data-tab="midia"', '🎵', 'Música e vídeos', 'clipes e sucessos', '#22c55e'],
       ['data-tab="jogos"', '🎮', '17 jogos', 'no controle remoto', '#f59e0b'],
       ['data-tab="kids"', '🧸', 'Kids', 'desenhos e joguinhos', '#ec4899'],
@@ -321,6 +349,7 @@
 
   function renderHome() {
     rowsIndex = {};
+    if (isKids() && ['kids', 'jogos', 'conta', 'busca'].indexOf(S.tab) < 0) S.tab = 'kids';
     if (S.briefing && S.tab !== 'noticias') { News.stop(); S.briefing = false; }
     var html = topbar();
     var st = S.settings;
@@ -336,8 +365,9 @@
 
     if (S.tab === 'inicio') {
       html += heroHtml();
-      var r = lsGet('ap_recent', []).map(itemById).filter(Boolean);
+      var r = lsGet(pk('ap_recent'), []).map(itemById).filter(Boolean);
       html += row('recent', '▶ Continuar de onde parou', r);
+      html += becauseRow(r[0]);
       html += row('aovivo', '🔴 Ao vivo agora', liveNowItems());
       html += topRow();
       html += '<div id="homenews"></div>';
@@ -360,6 +390,10 @@
       cats.forEach(function (c) { if (c.id !== 'filmes') html += row(c.id, c.name, catItems(c.id)); });
     } else if (S.tab === 'midia') {
       html += mediaTabHtml();
+    } else if (S.tab === 'busca') {
+      html += '<form class="searchbar" id="bsf" data-row="busca" autocomplete="off">' +
+        '<input class="focusable" id="bq" name="q" type="search" placeholder="Buscar canal, jogo ou notícia…" value="' + esc(S.buscaQ || '') + '">' +
+        '<button class="btn primary focusable" type="submit">Buscar</button></form><div id="brows"></div>';
     } else if (S.tab === 'noticias') {
       html += '<div id="nrows"><div class="spinner"></div></div>';
     } else if (S.tab === 'filmes') {
@@ -386,6 +420,7 @@
     if (S.tab === 'midia') loadMedia();
     if (S.tab === 'noticias') loadNews();
     if (S.tab === 'inicio') loadHomeNews();
+    if (S.tab === 'busca') initBusca();
     var kf = root.querySelector('#keyf');
     if (kf) kf.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -429,6 +464,7 @@
       if (!fresh) S.mediaHome = { at: Date.now(), data: d };
       if (S.tab !== 'midia' || !root.querySelector('#mrows')) return;
       drawMedia(d);
+      if (S.pendingMedia) { var pq = S.pendingMedia; S.pendingMedia = null; var mi = root.querySelector('#mq'); if (mi) mi.value = pq; searchMedia(pq); }
     }).catch(function () { box.innerHTML = '<p class="note" style="margin:0 var(--safe)">Não foi possível carregar agora. Tente de novo em instantes.</p>'; });
   }
   function drawMedia(home) {
@@ -569,6 +605,139 @@
         box.innerHTML = '<div class="nqr"><div class="qr">' + qrSvg(n.u) + '</div><p class="note">Aponte a câmera do celular para ler a matéria completa.</p></div>';
       }).catch(function () { toast('Não deu para mostrar o QR Code agora. Tente "Abrir no site".'); });
     }
+  }
+
+  // ---------------- Busca única (canais, jogos e notícias) ----------------
+  function norm(t) { return String(t || '').normalize ? String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase() : String(t || '').toLowerCase(); }
+  function initBusca() {
+    var f = root.querySelector('#bsf'), q = root.querySelector('#bq'), t = null;
+    if (!f) return;
+    if (!S.news) News.load(newsBase()).then(function (d) { S.news = d; }).catch(function () {});
+    q.addEventListener('input', function () { clearTimeout(t); t = setTimeout(function () { drawBusca(q.value); }, 250); });
+    f.addEventListener('submit', function (e) { e.preventDefault(); drawBusca(q.value); var first = root.querySelector('#brows .focusable'); if (first) Input.focus(first); });
+    drawBusca(S.buscaQ || '');
+    Input.focus(q);
+  }
+  function drawBusca(qs) {
+    var box = root.querySelector('#brows');
+    if (!box) return;
+    S.buscaQ = qs = String(qs || '').trim();
+    var html = '';
+    if (qs.length < 2) {
+      html += '<p class="note" style="margin:0 var(--safe) 1rem">Digite o nome de um canal, de um jogo ou um assunto (ex.: "futebol", "Peppa", "eleição").</p>';
+      html += row('baovivo', '🔴 Ao vivo agora', liveNowItems());
+      html += row('btop', '⭐ Top 10', topItems());
+    } else {
+      var w = norm(qs).split(/\s+/);
+      var hit = function (txt) { var n = norm(txt); return w.every(function (x) { return n.indexOf(x) >= 0; }); };
+      var cats = {}; S.catalog.categories.forEach(function (c) { cats[c.id] = c.name; });
+      var ch = S.catalog.items.filter(function (i) { return i.enabled !== false && (!isKids() || i.cat === 'infantil' || i.cat === 'educacao') && hit(i.name + ' ' + (i.desc || '') + ' ' + (cats[i.cat] || '') + ' ' + capaTitle(i.id)); });
+      var gs = games().filter(function (g) { return hit(g.name + ' ' + (g.desc || '')); });
+      var ns = [];
+      if (!isKids() && S.news) S.news.sections.forEach(function (sec) { sec.items.forEach(function (n) { if (ns.length < 20 && hit(n.t + ' ' + (n.s || '')) && ns.indexOf(n) < 0) ns.push(n); }); });
+      html += row('bcanais', '📺 Canais', ch) + row('bjogos', '🎮 Jogos', gs) + newsRow('bnews', '📰 Notícias', ns);
+      if (!ch.length && !gs.length && !ns.length) html += '<p class="note" style="margin:0 var(--safe) 1rem">Nada encontrado para "' + esc(qs) + '".</p>';
+      if (!isKids()) html += '<div class="inline" style="margin:0 var(--safe) 2rem" data-row="bmais"><button class="btn ghost focusable" data-act="buscamidia">🎵 Procurar "' + esc(qs) + '" em Música e Vídeos</button></div>';
+    }
+    box.innerHTML = html;
+    bindRoot(box);
+    applyCovers(box);
+  }
+
+  // ---------------- Perfis: telas ----------------
+  function openPerfis(titulo) {
+    var ps = perfis(), cur = perfil();
+    openModal('<h2>' + esc(titulo || 'Quem está assistindo?') + '</h2>' +
+      '<div class="perfis" data-row="perfis">' + ps.map(function (p) {
+        return '<button class="perfil focusable' + (p.id === cur.id ? ' atual' : '') + '" data-act="perfil" data-id="' + esc(p.id) + '"><span class="av">' + p.av + '</span><span class="pn">' + esc(p.nome) + '</span>' + (p.kids ? '<span class="pk">KIDS</span>' : '') + '</button>';
+      }).join('') + (ps.length < 6 ? '<button class="perfil novo focusable" data-act="perfilnovo"><span class="av">＋</span><span class="pn">Novo perfil</span></button>' : '') + '</div>' +
+      '<div class="inline" data-row="perfis2">' + (ps.length > 1 ? '<button class="btn ghost focusable small" data-act="perfisdel">🗑 Apagar um perfil</button>' : '') +
+      '<button class="btn ghost focusable" data-act="close">Voltar</button></div>' +
+      '<p class="note">Cada perfil tem seus favoritos e o "Continuar". O perfil Kids mostra só desenhos e jogos infantis, e para sair dele é preciso o PIN.</p>');
+    var at = overlay.querySelector('.perfil.atual'); if (at) Input.focus(at);
+  }
+  // Pede o PIN do controle dos pais (se houver) antes de uma ação protegida
+  function askPin(onOk, titulo) {
+    var pin = lsGet('ap_pin', '');
+    // PIN já confirmado há pouco (ex.: abriu os perfis e agora escolhe um): não pergunta de novo
+    if (!pin || (S.pinOkAt && Date.now() - S.pinOkAt < 120000)) return onOk();
+    openModal('<form id="pinf" autocomplete="off"><h2>🔒 ' + esc(titulo || 'Digite o PIN') + '</h2><p>PIN do controle dos pais (4 números).</p>' +
+      '<label class="field"><span>PIN</span><input class="focusable" name="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off"></label>' +
+      '<div class="inline" data-row="pin"><button type="submit" class="btn primary focusable">OK</button><button type="button" class="btn ghost focusable" data-act="close">Voltar</button></div></form>');
+    var f = overlay.querySelector('#pinf');
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (String(f.querySelector('[name=pin]').value) === String(pin)) { S.pinOkAt = Date.now(); closeModal(); onOk(); }
+      else { toast('PIN incorreto'); f.querySelector('[name=pin]').value = ''; }
+    });
+  }
+  function choosePerfil(id) {
+    var alvo = perfis().filter(function (p) { return p.id === id; })[0];
+    if (!alvo) return;
+    var go = function () {
+      lsSet('ap_perfil', id); S.perfilOk = true; closeModal();
+      S.tab = homeTab(); renderHome(); toast('Olá, ' + alvo.nome + '! ' + alvo.av);
+    };
+    if (alvo.id === perfil().id) { S.perfilOk = true; return closeModal(); }
+    if (isKids() && !alvo.kids) return askPin(go, 'Sair do perfil Kids');
+    go();
+  }
+  function novoPerfil() {
+    var av = 0, kids = false;
+    openModal('<form id="pnf" autocomplete="off"><h2>Novo perfil</h2>' +
+      '<label class="field"><span>Nome</span><input class="focusable" name="nome" type="text" maxlength="16" placeholder="Ex.: Vovó, Pedro, Kids"></label>' +
+      '<div class="inline" data-row="pn1"><button type="button" class="btn ghost focusable" id="pnav">Avatar: ' + AVATARES[0] + '</button>' +
+      '<button type="button" class="btn ghost focusable" id="pnk">Tipo: Adulto</button></div>' +
+      '<label class="field" id="pnpin" style="display:none"><span>Crie um PIN de 4 números (para sair do perfil Kids)</span><input class="focusable" name="pin" type="password" inputmode="numeric" maxlength="4"></label>' +
+      '<div class="inline" data-row="pn2"><button type="submit" class="btn primary focusable">Criar perfil</button><button type="button" class="btn ghost focusable" data-act="close">Voltar</button></div></form>');
+    var f = overlay.querySelector('#pnf');
+    f.querySelector('#pnav').addEventListener('click', function () { av = (av + 1) % AVATARES.length; this.textContent = 'Avatar: ' + AVATARES[av]; });
+    f.querySelector('#pnk').addEventListener('click', function () {
+      kids = !kids; this.textContent = 'Tipo: ' + (kids ? 'Kids 🧸' : 'Adulto');
+      f.querySelector('#pnpin').style.display = kids && !lsGet('ap_pin', '') ? '' : 'none';
+    });
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var nome = String(f.querySelector('[name=nome]').value || '').trim().slice(0, 16);
+      if (nome.length < 2) return toast('Digite um nome');
+      if (kids && !lsGet('ap_pin', '')) {
+        var pin = String(f.querySelector('[name=pin]').value || '');
+        if (!/^\d{4}$/.test(pin)) return toast('Crie um PIN com 4 números');
+        lsSet('ap_pin', pin);
+      }
+      var ps = perfis(), id = 'p' + Date.now().toString(36);
+      ps.push({ id: id, nome: nome, av: AVATARES[av], kids: kids });
+      lsSet('ap_perfis', ps);
+      toast('Perfil "' + nome + '" criado');
+      choosePerfil(id);
+    });
+  }
+  function apagarPerfil() {
+    var ps = perfis().filter(function (p) { return p.id !== 'p1'; });
+    openModal('<h2>🗑 Apagar perfil</h2><p>Escolha o perfil que vai sair deste aparelho (o Principal não pode ser apagado).</p><div class="perfis" data-row="pdel">' +
+      ps.map(function (p) { return '<button class="perfil focusable" data-act="perfilapagar" data-id="' + esc(p.id) + '"><span class="av">' + p.av + '</span><span class="pn">' + esc(p.nome) + '</span></button>'; }).join('') +
+      '</div><div class="inline"><button class="btn ghost focusable" data-act="close">Voltar</button></div>');
+  }
+
+  // ---------------- Surpreenda-me e Multitela ----------------
+  function surpresa() {
+    var l = liveNowItems().concat(topItems().filter(function (x) { return x.kind !== 'game'; }));
+    if (!l.length) return;
+    var it = l[Math.floor(Math.random() * l.length)];
+    toast('🎲 Que tal: ' + it.name + '?');
+    rowsIndex.surpresa = l;
+    openItem(it.id, 'surpresa');
+  }
+  function abrirMulti() {
+    if (!access().tv) return openPaywall('Seu teste terminou. Assine para continuar assistindo.');
+    var pref = favs().map(itemById).filter(function (i) { return i && i.kind !== 'game' && playableOn(i); });
+    var l = [], seen = {};
+    var cand = pref.concat(liveNowItems());
+    // Pendrive (file://): o YouTube não toca fora de um site/app, então começa pelos sinais oficiais diretos
+    if (location.protocol === 'file:') cand = cand.filter(function (i) { return i.type === 'hls'; }).concat(allChannels().filter(function (i) { return i.type === 'hls'; }));
+    cand.forEach(function (i) { if (!seen[i.id] && l.length < 4) { seen[i.id] = 1; l.push(i); } });
+    if (!window.Multi) return;
+    Multi.open(l, allChannels().filter(function (i) { return i.type !== 'link'; }));
   }
 
   // Desbloqueio de jogo premium por anúncio recompensado (30 min)
@@ -873,6 +1042,19 @@
     if (/^n(brief|refresh|speak|open|next|qr)$/.test(act)) return newsAct(act, el);
     if (act === 'paywall') return openPaywall();
     if (act === 'buy') return openBuy();
+    if (act === 'perfis') return isKids() ? askPin(function () { openPerfis(); }, 'Trocar de perfil') : openPerfis();
+    if (act === 'perfil') return choosePerfil(el.getAttribute('data-id'));
+    if (act === 'perfilnovo') return isKids() ? askPin(novoPerfil, 'Criar perfil') : novoPerfil();
+    if (act === 'perfisdel') return askPin(apagarPerfil, 'Apagar perfil');
+    if (act === 'perfilapagar') {
+      var pid = el.getAttribute('data-id');
+      lsSet('ap_perfis', perfis().filter(function (p) { return p.id !== pid; }));
+      if (lsGet('ap_perfil', 'p1') === pid) lsSet('ap_perfil', 'p1');
+      closeModal(); S.tab = homeTab(); renderHome(); return toast('Perfil apagado');
+    }
+    if (act === 'surpresa') return surpresa();
+    if (act === 'multi') return abrirMulti();
+    if (act === 'buscamidia') { S.pendingMedia = S.buscaQ; S.mediaResults = null; S.tab = 'midia'; return renderHome(); }
     if (act === 'dono') return openDono();
     if (act === 'donosair') { try { localStorage.removeItem('ap_dono_code'); } catch (e) {} toast('Modo dono desligado neste aparelho'); setTimeout(function () { location.reload(); }, 700); return; }
     if (act === 'pix') return checkout('pix');
@@ -970,16 +1152,16 @@
   }
 
   function back() {
-    if (Player.isOpen() || GameHub.isOpen() || MediaPlayer.isOpen()) return true;
+    if (Player.isOpen() || GameHub.isOpen() || MediaPlayer.isOpen() || (window.Multi && Multi.isOpen())) return true;
     if (S.modalOpen) { closeModal(); return true; }
     if (root.querySelector('#authf')) { renderWelcome(); return true; }
-    if (S.tab !== 'inicio' && root.querySelector('.topbar')) { S.tab = 'inicio'; renderHome(); return true; }
+    if (S.tab !== homeTab() && root.querySelector('.topbar')) { S.tab = homeTab(); renderHome(); return true; }
     return false; // na tela inicial: deixa o app/TV sair
   }
 
   // Ações globais (prioridade mais baixa: player e jogos interceptam antes)
   Input.on(function (a) {
-    if (Player.isOpen() || GameHub.isOpen() || MediaPlayer.isOpen() || OptionsSheet.isOpen()) return false;
+    if (Player.isOpen() || GameHub.isOpen() || MediaPlayer.isOpen() || OptionsSheet.isOpen() || (window.Multi && Multi.isOpen())) return false;
     var scope = S.modalOpen ? overlay : root;
     if (a === 'up' || a === 'down' || a === 'left' || a === 'right') { Input.move(a, scope); return true; }
     if (a === 'ok') {
@@ -1013,9 +1195,16 @@
     document.title = S.settings.productName;
   }
 
+  // Mais de um perfil: pergunta "Quem está assistindo?" ao abrir (como na Netflix)
+  function askPerfilOnce() {
+    if (S.perfilOk || perfis().length < 2 || S.modalOpen || !root.querySelector('.topbar')) return;
+    S.perfilOk = true;
+    if (!isKids()) openPerfis();
+  }
   function boot() {
     Prefs.detect();
     loadCapas();
+    setTimeout(askPerfilOnce, 600);
     S.token = lsGet('ap_token', null);
     var ref = (new URLSearchParams(location.search)).get('ref');
     if (ref) lsSet('ap_ref', ref);
@@ -1038,7 +1227,9 @@
 
   window.App = {
     toast: toast, track: track, isFav: isFav, toggleFav: toggleFav, openExternal: openExternal,
-    resolveYoutube: resolveYoutube, restoreFocus: restoreFocus, back: back, state: S
+    resolveYoutube: resolveYoutube, restoreFocus: restoreFocus, back: back, state: S,
+    allChannels: allChannels, channelNumber: channelNumber, capaTitle: capaTitle, coverUrl: function (it) { return coverUrl(it); },
+    pushRecent: pushRecent, access: access, openPaywall: function (r) { return openPaywall(r); }
   };
   window.UI = { toast: toast };
   boot();

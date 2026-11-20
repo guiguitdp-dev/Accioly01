@@ -368,3 +368,63 @@ html { font-size: clamp(14px, 1.12vw, 24px); }
   .tab.buy { padding: .45rem .6rem; }
   .tab { padding: .42rem .5rem; letter-spacing: 0; font-size: 13px; }
 }
+
+/* ---------- Número do canal no cartão ---------- */
+.tile .chnum { position: absolute; z-index: 2; right: .6rem; bottom: .55rem; font-family: var(--display, inherit); font-weight: 800; font-size: max(.62rem, 11px);
+  padding: .12rem .42rem; border-radius: 6px; background: rgba(4, 6, 14, .72); border: 1px solid rgba(255, 255, 255, .22); color: #e8f6ff; letter-spacing: .04em; }
+.tile.has-cover .chnum { bottom: auto; top: 2.6rem; }
+
+/* ---------- Busca e perfis no topo ---------- */
+.tab.gear.search, .tab.gear.avatar { font-size: 1.05rem; padding: .42rem .62rem; }
+@media (max-width: 1100px) and (min-width: 701px) { .tab.gear.search, .tab.gear.avatar { display: inline-flex; } }
+.perfis { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1rem 0 1.2rem; }
+.perfil { display: flex; flex-direction: column; align-items: center; gap: .45rem; width: 7.6rem; padding: 1rem .5rem; border-radius: 18px;
+  background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .12); color: #eaf4ff; transition: transform .16s ease, box-shadow .16s ease; }
+.perfil .av { font-size: 2.6rem; width: 4.4rem; height: 4.4rem; display: flex; align-items: center; justify-content: center; border-radius: 16px;
+  background: linear-gradient(145deg, rgba(47, 230, 255, .25), rgba(139, 92, 255, .25)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25); }
+.perfil .pn { font-weight: 700; font-size: max(.95rem, 14px); text-align: center; }
+.perfil .pk { font-size: 11px; font-weight: 800; letter-spacing: .08em; color: #1a0f00; background: #fbbf24; padding: .08rem .45rem; border-radius: 6px; }
+.perfil.atual { border-color: rgba(47, 230, 255, .6); }
+.perfil:focus { transform: scale(1.08); box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(47, 230, 255, .55); outline: none; }
+.perfil.novo .av { background: rgba(255, 255, 255, .06); border: 2px dashed rgba(255, 255, 255, .3); }
+
+/* ---------- Player: número, digitação e guia ---------- */
+#player .osd .title .pnum { display: inline-block; min-width: 2.4rem; text-align: center; margin-right: .6rem; padding: .1rem .5rem; border-radius: 8px;
+  background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .3); font-weight: 900; }
+.pnumin { position: absolute; top: 6%; right: 5%; z-index: 30; font-family: var(--display, inherit); font-weight: 900; font-size: 4.2rem; letter-spacing: .12em;
+  color: #fff; text-shadow: 0 0 22px rgba(47, 230, 255, .8), 0 4px 18px #000; }
+.pguide { position: absolute; z-index: 25; top: 0; bottom: 0; left: 0; width: min(34rem, 92vw); display: flex; flex-direction: column;
+  background: linear-gradient(90deg, rgba(4, 6, 14, .97) 70%, rgba(4, 6, 14, .85)); border-right: 1px solid rgba(255, 255, 255, .12); box-shadow: 20px 0 60px rgba(0, 0, 0, .6); }
+.pg-head { padding: 1.2rem 1.4rem .8rem; font-weight: 800; font-size: 1.3rem; color: #fff; }
+.pg-head small { display: block; font-weight: 500; font-size: max(.8rem, 13px); color: #9fb6d8; margin-top: .2rem; }
+.pg-list { overflow-y: auto; padding: 0 .8rem 1.2rem; scrollbar-width: none; }
+.pg-item { width: 100%; display: flex; align-items: center; gap: .8rem; padding: .55rem .6rem; margin: .2rem 0; border-radius: 12px; border: 1px solid transparent;
+  background: transparent; color: #e6f1ff; text-align: left; }
+.pg-item .pg-n { width: 2.4rem; flex: 0 0 auto; text-align: center; font-weight: 900; color: #9fe9ff; }
+.pg-item img, .pg-item .pg-ph { width: 6.4rem; height: 3.6rem; flex: 0 0 auto; object-fit: cover; border-radius: 8px; background: rgba(255, 255, 255, .06); }
+.pg-item .pg-t { display: flex; flex-direction: column; min-width: 0; }
+.pg-item .pg-t b { font-size: max(1rem, 15px); }
+.pg-item .pg-t small { font-size: max(.8rem, 13px); color: #a9bad6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 20rem; }
+.pg-item.atual { border-color: rgba(47, 230, 255, .4); background: rgba(47, 230, 255, .08); }
+.pg-item:focus { outline: none; background: rgba(255, 255, 255, .12); box-shadow: 0 0 0 3px #fff; }
+
+/* ---------- Multitela ---------- */
+#multi { background: #000; display: flex; flex-direction: column; }
+.mt-grid { flex: 1; display: grid; gap: 6px; padding: 6px; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; }
+.mt-grid.n2 { grid-template-rows: 1fr; }
+.mt-grid.n3 .mt-cell:first-child { grid-column: 1 / span 2; }
+.mt-cell { position: relative; border: 0; padding: 0; border-radius: 10px; overflow: hidden; background: #05070f; outline: none; }
+.mt-media, .mt-media video, .mt-media iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; object-fit: contain; pointer-events: none; }
+.mt-media .spinner { position: absolute; top: 50%; left: 50%; margin: -1rem 0 0 -1rem; }
+.mt-name { position: absolute; left: .7rem; bottom: .6rem; z-index: 2; padding: .2rem .6rem; border-radius: 8px; background: rgba(0, 0, 0, .65); color: #fff; font-weight: 700; font-size: max(.9rem, 13px); }
+.mt-snd { position: absolute; right: .7rem; top: .6rem; z-index: 2; font-size: 1.3rem; opacity: 0; transition: opacity .2s; }
+.mt-cell.som .mt-snd { opacity: 1; }
+.mt-cell:focus { box-shadow: inset 0 0 0 4px #fff, inset 0 0 0 7px rgba(47, 230, 255, .7); }
+.mt-off { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #9fb6d8; margin: 0; }
+.mt-help { padding: .5rem 1rem .7rem; color: #9fb6d8; font-size: max(.85rem, 13px); text-align: center; }
+.mt-menu { position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .6); }
+.mt-box { background: rgba(10, 14, 30, .97); border: 1px solid rgba(255, 255, 255, .15); border-radius: 18px; padding: 1.4rem 1.6rem; max-width: 90vw; }
+.mt-box h3 { margin: 0 0 1rem; color: #fff; }
+.mt-pick .mt-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: .5rem; max-height: 60vh; overflow-y: auto; }
+.mt-pick .mt-list .btn { justify-content: flex-start; text-align: left; }
+@media (max-width: 700px) { .mt-grid { grid-template-columns: 1fr; } .mt-grid.n3 .mt-cell:first-child { grid-column: auto; } }
