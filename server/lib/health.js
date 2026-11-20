@@ -32,13 +32,17 @@ async function liveStatus(channelId) {
 }
 
 // Confere o canal pelo ID oficial no feed público do YouTube (leve e confiável)
-async function channelExists(channelId) {
+// { exists: true/false/null, title }: o nome oficial serve para conferir que o ID é do canal certo
+async function channelInfo(channelId) {
   try {
     const r = await get('https://www.youtube.com/feeds/videos.xml?channel_id=' + channelId, 15000);
-    if (r.status === 404) return false;
-    if (r.status < 400 && /<feed\b/.test(r.text)) return true;
+    if (r.status === 404) return { exists: false, title: '' };
+    if (r.status < 400 && /<feed\b/.test(r.text)) {
+      const t = /<title>([^<]*)<\/title>/.exec(r.text);
+      return { exists: true, title: t ? t[1].replace(/&amp;/g, '&').trim() : '' };
+    }
   } catch (e) { /* sem resposta */ }
-  return null;
+  return { exists: null, title: '' };
 }
 
 // Descobre o ID pelo @handle (ou usa o ID já conhecido) e vê se está ao vivo
@@ -76,10 +80,11 @@ async function checkItem(it) {
       return { ok, status: r.status, ms: r.ms, note: ok ? 'sinal OK' : 'playlist inválida/fora do ar' };
     }
     if (it.type === 'youtube' && it.channelId) {
-      const exists = await channelExists(it.channelId);
+      const info = await channelInfo(it.channelId);
+      const exists = info.exists, title = info.title;
       if (exists === false) return { ok: false, channelId: it.channelId, live: false, note: 'canal não encontrado no YouTube (o ID mudou?)' };
       const live = await liveStatus(it.channelId);
-      return { ok: true, channelId: it.channelId, live: live === true, liveKnown: live !== null, note: ytNote(exists, live) };
+      return { ok: true, channelId: it.channelId, title, live: live === true, liveKnown: live !== null, note: ytNote(exists, live) + (title ? ' — "' + title + '"' : '') };
     }
     if (it.type === 'youtube') {
       const y = await resolveYoutube(it.handle);
@@ -108,4 +113,4 @@ async function checkAll(items, concurrency) {
   return out;
 }
 
-module.exports = { checkAll, checkItem, resolveYoutube, channelExists, liveStatus };
+module.exports = { checkAll, checkItem, resolveYoutube, channelInfo, liveStatus };
