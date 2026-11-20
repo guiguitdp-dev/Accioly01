@@ -556,7 +556,13 @@
     if (!n) return;
     if (act === 'nspeak') { if (!News.speak(n.t + '. ' + (n.s || '') + ' Fonte: ' + n.src + '.')) toast('Este aparelho não lê em voz alta, mas você pode ler na tela.'); return; }
     if (act === 'nopen') return openExternal(n.u);
-    if (act === 'nnext') return openNews(S.newsCur.row, S.newsCur.i + 1);
+    if (act === 'nnext') {
+      openNews(S.newsCur.row, S.newsCur.i + 1);
+      // Continua no "Próxima" para passar várias notícias seguidas com o controle
+      var nb = overlay.querySelector('[data-act=nnext]') || overlay.querySelector('[data-act=close]');
+      if (nb) Input.focus(nb);
+      return;
+    }
     if (act === 'nqr') {
       var box = overlay.querySelector('#nqrbox');
       return loadQr().then(function () {

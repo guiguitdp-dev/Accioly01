@@ -298,7 +298,7 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
     const vt = await ctx.newPage();
     vt.on('pageerror', (e) => { if (own(e)) errors.push('vitrine: ' + e.message); });
     await vt.goto('file://' + path.join(vdir, 'ABRIR ACCIOLY PLAY.html'));
-    await vt.waitForSelector('#demopill');
+    await vt.waitForSelector('#demopill', { state: 'attached' });
     ok('vitrine abre o menu principal com tudo liberado por tempo', /min/.test(await vt.textContent('#demopill')) && (await vt.locator('.tile[data-id=quiz] .lock').count()) === 0);
     await vt.click('.topbar [data-act=buy]');
     await vt.waitForSelector('#bq0 svg');

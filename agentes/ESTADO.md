@@ -37,7 +37,7 @@ Atualizado em: 2026-11-20
 - 37 itens no catálogo (HLS oficiais, YouTube oficiais e links de apps gratuitos). Primeira verificação real deve rodar no servidor do dono (no Brasil).
 
 ## Qualidade
-- Teste automático: 74/74 passando (notícias, vitrine e código do dono) (Pix, 17 jogos, Música e Vídeos, AdSense, AdMob simulado).
+- Teste automático: 77/77 passando (notícias, vitrine, código do dono, capas e Top 10) (Pix, 17 jogos, Música e Vídeos, AdSense, AdMob simulado).
 - APK Android TV compila no GitHub Actions (artefato "AcciolyPlay-AndroidTV").
 
 ## Números

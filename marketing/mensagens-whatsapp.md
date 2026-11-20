@@ -3,6 +3,49 @@
 > Troque [NOME], [LINK], [X] e [CÓDIGO]. O Painel do Dono (Ações do dia) já monta várias destas sozinho.
 > Regra de ouro: **1 mensagem curta, 1 pergunta, 1 próximo passo.**
 
+## Novidades (nov/2026) — 5 mensagens novas
+> Tudo aqui já está no app. Não prometa canal pago, "todos os canais" nem Globo/Record ao vivo completo (esse fica nos apps delas).
+
+### 1. Notícias de hora em hora + resumo em voz alta (ótima para pais e avós)
+```
+Oi [NOME]! Novidade no Accioly Play 📰
+Agora a TV mostra as notícias do dia, do Brasil e do mundo, atualizadas de hora em hora.
+E tem um botão que lê o resumo em voz alta (se o aparelho tiver voz). Nem precisa forçar a vista 😉
+Quer testar grátis? [LINK]
+```
+
+### 2. Top 10 do dia + capas reais
+```
+Oi [NOME]! O Accioly Play ficou com cara de streaming 😍
+A tela inicial agora tem o Top 10 do dia e a imagem real de cada canal e de cada jogo. Fica bem mais fácil escolher o que ver.
+Quer que eu te mande o link pra testar grátis?
+```
+
+### 3. Jogos de tiro retrô (nostalgia de fliperama)
+```
+Quem aí jogava fliperama? 🕹️
+No Accioly Play tem 4 jogos de tiro retrô: Esquadrilha 2000 (a navinha), Comando Retrô, Mira Certeira e Operação 3D.
+Joga com o controle da TV mesmo, sem videogame. Bora testar? [LINK]
+```
+
+### 4. Vitrine no pendrive — 30 minutos com tudo liberado (visita, loja, parceiro)
+```
+Oi [NOME]! Posso te mostrar o Accioly Play na sua TV? 📺
+Levo um pendrive: na TV Box, Android TV ou computador você usa 30 minutos com tudo liberado, sem cadastro.
+Se gostar, assina ali mesmo pelo QR Code do WhatsApp. Que dia fica bom pra você?
+```
+
+### 5. Status / lista de transmissão — resumo das novidades
+```
+📺 Novidades no Accioly Play!
+📰 Notícias do dia de hora em hora, com resumo em voz alta
+🔥 Top 10 do dia, com a imagem real de cada canal e jogo
+🔫 4 jogos de tiro retrô, clima de fliperama
+🎮 17 jogos no controle + canais oficiais e gratuitos
+💸 Fundador: R$ 15,99/mês — restam [X] vagas
+Teste grátis, sem cartão: [LINK]
+```
+
 ## Abordagem pessoal (rede quente — mande uma a uma)
 ```
 Oi [NOME], tudo bem? 😊
