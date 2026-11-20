@@ -27,6 +27,7 @@ const health = require('./lib/health');
 const mercadopago = require('./lib/mercadopago');
 const media = require('./lib/media');
 const news = require('./lib/news');
+const capas = require('./lib/capas');
 
 const ROOT = path.resolve(__dirname, '..');
 const APP_DIR = path.join(ROOT, 'app');
@@ -482,6 +483,15 @@ route('GET', '/api/news', async (req, res) => {
     const r = await news.get();
     send(res, 200, { updatedAt: r.updatedAt, total: r.total, top: r.top, sections: r.sections }, { 'Cache-Control': 'public, max-age=300' });
   } catch (e) { fail(res, 503, 'Notícias indisponíveis agora.'); }
+});
+
+// Capas reais dos canais (vídeo mais recente de cada canal oficial; cache de 1 hora)
+route('GET', '/api/capas', async (req, res) => {
+  if (NEWS_MOCK) return send(res, 200, capas.mock(D.catalog.items));
+  try {
+    const r = await capas.get(D.catalog.items);
+    send(res, 200, { updatedAt: r.updatedAt, items: r.items }, { 'Cache-Control': 'public, max-age=600' });
+  } catch (e) { fail(res, 503, 'Capas indisponíveis agora.'); }
 });
 
 // ---------------- Painel do Dono ----------------

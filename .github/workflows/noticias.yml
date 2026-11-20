@@ -1,4 +1,4 @@
-# Notícias do dia a dia (Brasil e mundo) de hora em hora — ZERO tokens de IA.
+# Notícias do dia a dia (Brasil e mundo) e capas reais dos canais, de hora em hora — ZERO tokens de IA.
 # Lê os feeds RSS oficiais (Agência Brasil, g1, Folha, BBC News Brasil, DW, ONU News...)
 # e publica o arquivo noticias.json no ramo "noticias-dados" (só 1 arquivo, sem histórico).
 # O app lê de lá quando não tem servidor (pendrive, APK, iPhone).
@@ -26,6 +26,7 @@ jobs:
           sparse-checkout: |
             scripts
             server/lib
+            app/js
       - uses: actions/setup-node@v6
         with:
           node-version: 22
@@ -35,6 +36,8 @@ jobs:
           path: ~/.android/debug.keystore
           key: accioly-assinatura-v1
       - run: node scripts/news.js --out publicar/noticias.json --min 20
+      - name: Capas reais dos canais (vídeo mais recente de cada canal oficial)
+        run: node scripts/capas.js --out publicar/capas.json || echo "Sem capas desta vez"
       - name: Publicar no ramo noticias-dados
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -43,6 +46,6 @@ jobs:
           git init -q -b noticias-dados
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add noticias.json
+          git add noticias.json $( [ -f capas.json ] && echo capas.json )
           git commit -qm "Notícias $(date -u +%Y-%m-%dT%H:%MZ)"
           git push -fq "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" noticias-dados

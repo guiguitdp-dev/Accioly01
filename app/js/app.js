@@ -160,8 +160,10 @@
       lock = !acc.tv;
     }
     var isNew = it.trending || it.novo;
-    return '<button class="tile focusable' + (off ? ' off' : '') + '" style="--c:' + esc(it.color || '#334') + '" data-id="' + esc(it.id) + '" data-rowid="' + esc(rowId) + '">' +
-      badge + (isFav(it.id) ? '<span class="fav">★</span>' : (isNew ? '<span class="ribbon">NOVO</span>' : '')) +
+    var cov = coverUrl(it), capa = S.capas && S.capas[it.id];
+    if (!sub && capa && capa.t) sub = '▶ ' + capa.t;
+    return '<button class="tile focusable' + (off ? ' off' : '') + (cov ? ' has-cover' : '') + '" style="--c:' + esc(it.color || '#334') + '" data-id="' + esc(it.id) + '" data-rowid="' + esc(rowId) + '">' +
+      (cov ? coverImg(cov) : '') + badge + (isFav(it.id) ? '<span class="fav">★</span>' : (isNew ? '<span class="ribbon">NOVO</span>' : '')) +
       (it.emoji ? '<span class="emoji">' + it.emoji + '</span>' : '<span class="mono' + ((it.mono || '').length > 3 ? ' sm' : '') + '">' + esc(it.mono || initials(it.name)) + '</span>') +
       '<span class="name">' + esc(it.name) + '</span>' + (sub ? '<span class="sub">' + esc(sub) + '</span>' : '') +
       (lock ? '<span class="lock">🔒</span>' : '') + '</button>';
@@ -188,6 +190,70 @@
       .map(function (x) { return x.it; });
   }
 
+  // ---------------- Seções da tela inicial ----------------
+  function playableOn(it) { return it && it.enabled !== false && it.status !== 'off' && it.type !== 'link'; }
+  // Transmissões contínuas: sinais oficiais .m3u8 e canais 24h do YouTube
+  function liveNowItems() {
+    return S.catalog.items.filter(function (i) { return playableOn(i) && (i.type === 'hls' || i.live === true); }).slice(0, 16);
+  }
+  // Top 10: o que mais estão vendo/jogando no servidor, completado por uma seleção da casa
+  var TOP_CASA = ['sbt', 'capivara', 'cnnbrasil', 'globo', 'penaltis', 'cazetv', 'esquadrilha', 'galinha', 'record', 'frutas', 'sbtnews', 'operacao3d'];
+  function topItems() {
+    var out = [], seen = {};
+    function add(it) { if (it && !seen[it.id] && (it.kind === 'game' || playableOn(it))) { seen[it.id] = 1; out.push(it); } }
+    (S.trending || []).forEach(function (t) { add(itemById(t.id)); });
+    TOP_CASA.forEach(function (id) { add(itemById(id)); });
+    return out.slice(0, 10);
+  }
+  function topRow() {
+    var items = topItems();
+    if (!items.length) return '';
+    rowsIndex.top10 = items;
+    return '<section class="row top10row"><h2>⭐ Top 10 hoje no Accioly</h2><div class="track" data-row="top10">' +
+      items.map(function (it, i) { return '<div class="rankwrap"><span class="rank" aria-hidden="true">' + (i + 1) + '</span>' + tile(it, 'top10') + '</div>'; }).join('') + '</div></section>';
+  }
+  function familyItems() {
+    var kidsCh = catItems('infantil').filter(playableOn).slice(0, 6);
+    var g = games().filter(function (x) { return KIDS_GAMES.indexOf(x.id) >= 0; }).slice(0, 6);
+    var out = [];
+    for (var i = 0; i < Math.max(kidsCh.length, g.length); i++) { if (kidsCh[i]) out.push(kidsCh[i]); if (g[i]) out.push(g[i]); }
+    return out;
+  }
+
+  // ---------------- Capas reais ----------------
+  // Jogos: foto real do jogo (img/jogos). Canais do YouTube: miniatura oficial do vídeo mais recente.
+  var CAPAS_RAW = CFG.capasUrl || 'https://raw.githubusercontent.com/guiguitdp-dev/Accioly01/noticias-dados/capas.json';
+  function coverUrl(it) {
+    if (it.kind === 'game') return 'img/jogos/' + it.id + '.jpg';
+    var c = S.capas && S.capas[it.id];
+    return c && /^[\w-]{11}$/.test(c.v) ? 'https://i.ytimg.com/vi/' + c.v + '/mqdefault.jpg' : '';
+  }
+  function coverImg(url) { return '<img class="cover" src="' + esc(url) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.remove(\'has-cover\');this.remove()">'; }
+  function loadCapas() {
+    var memo = lsGet('ap_capas', null);
+    if (memo && memo.items) S.capas = memo.items;
+    if (memo && Date.now() - (memo.at || 0) < 2 * 3600e3) return;
+    var url = (LOCAL || !S.online) ? CAPAS_RAW : API + '/api/capas';
+    fetch(url, { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function (d) {
+      if (!d || !d.items) return;
+      S.capas = d.items;
+      lsSet('ap_capas', { at: Date.now(), items: d.items });
+      applyCovers(root);
+    }).catch(function () {});
+  }
+  // Capas que chegaram depois da tela pronta: entram sem redesenhar (o foco não pula)
+  function applyCovers(scope) {
+    (scope || root).querySelectorAll('.tile[data-id]:not(.has-cover)').forEach(function (b) {
+      var it = itemById(b.getAttribute('data-id'));
+      var u = it && coverUrl(it);
+      if (!u) return;
+      b.classList.add('has-cover');
+      b.insertAdjacentHTML('afterbegin', coverImg(u));
+      var c = S.capas && S.capas[it.id];
+      if (c && c.t && !b.querySelector('.sub')) b.insertAdjacentHTML('beforeend', '<span class="sub">▶ ' + esc(c.t) + '</span>');
+    });
+  }
+
   var KIDS_GAMES = ['capivara', 'blocos', 'memoria', 'cobrinha', 'frutas', 'velha', 'quebrablocos', 'meteoros', 'corrida', 'pingpong', 'penaltis'];
 
   // "Em alta": o que mais estão assistindo/jogando no servidor + jogos novos em alta
@@ -210,12 +276,22 @@
       { kicker: 'KIDS', title: '🧸 Cantinho Kids', text: 'Desenhos e jogos para a criançada, tudo num lugar só.', c1: '#ec4899', c2: '#8b5cf6', tab: 'kids', btn: '🧸 Abrir Kids' }
     ];
   }
+  // Imagem real de fundo para cada destaque (capa do canal ao vivo, foto da notícia, tela do jogo)
+  function heroCover(i) {
+    if (i === 0) { var live = liveNowItems().concat(topItems()).filter(function (x) { return x.kind !== 'game' && coverUrl(x); })[0]; return live ? coverUrl(live).replace('mqdefault', 'hqdefault') : ''; }
+    if (i === 1) { var n = S.news && (S.news.top || []).filter(function (x) { return x.img; })[0]; return n ? n.img : ''; }
+    if (i === 2) { var m = itemById('musicamultishow') || itemById('kondzilla'); return m && coverUrl(m) ? coverUrl(m).replace('mqdefault', 'hqdefault') : ''; }
+    if (i === 3) return 'img/jogos/capivara.jpg';
+    if (i === 4) { var k = itemById('galinha') || itemById('luna'); return k && coverUrl(k) ? coverUrl(k).replace('mqdefault', 'hqdefault') : 'img/jogos/frutas.jpg'; }
+    return '';
+  }
   function heroHtml() {
-    var st = S.settings, acc = access(), s = heroSlides()[S.heroIdx || 0];
+    var st = S.settings, acc = access(), s = heroSlides()[S.heroIdx || 0], bg = heroCover(S.heroIdx || 0);
     var cta = '';
     if (DEMO) cta = '<button class="btn hot focusable" data-act="buy">⭐ Quero assinar</button>';
     if (!LOCAL && S.online && S.user && !acc.premium) cta = '<button class="btn hot focusable" data-act="paywall">Assinar por ' + money(st.promoRemaining > 0 ? st.promoPrice : st.regularPrice) + '/mês</button>';
-    return '<section class="hero" id="hero" style="--h1:' + s.c1 + ';--h2:' + s.c2 + '"><span class="kicker">' + esc(s.kicker) + '</span><h1>' + esc(s.title) + '</h1><p>' + esc(s.text) + '</p><div class="actions" data-row="hero">' +
+    return '<section class="hero' + (bg ? ' has-bg' : '') + '" id="hero" style="--h1:' + s.c1 + ';--h2:' + s.c2 + '">' +
+      (bg ? '<img class="hero-bg" src="' + esc(bg) + '" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.remove(\'has-bg\');this.remove()">' : '') + '<span class="kicker">' + esc(s.kicker) + '</span><h1>' + esc(s.title) + '</h1><p>' + esc(s.text) + '</p><div class="actions" data-row="hero">' +
       '<button class="btn primary focusable" data-act="watch">▶ Assistir agora</button>' +
       (s.tab ? '<button class="btn ghost focusable" data-tab="' + s.tab + '">' + esc(s.btn) + '</button>' : '<button class="btn ghost focusable" data-tab="jogos">🎮 Jogar</button>') + cta + '</div>' +
       '<div class="dots">' + heroSlides().map(function (x, i) { return '<i' + (i === (S.heroIdx || 0) ? ' class="on"' : '') + '></i>'; }).join('') + '</div></section>';
@@ -260,17 +336,20 @@
 
     if (S.tab === 'inicio') {
       html += heroHtml();
-      html += quickRow();
+      var r = lsGet('ap_recent', []).map(itemById).filter(Boolean);
+      html += row('recent', '▶ Continuar de onde parou', r);
+      html += row('aovivo', '🔴 Ao vivo agora', liveNowItems());
+      html += topRow();
       html += '<div id="homenews"></div>';
+      html += quickRow();
       var f = favs().map(itemById).filter(Boolean);
       html += row('favs', '★ Meus Favoritos', f);
-      var r = lsGet('ap_recent', []).map(itemById).filter(Boolean);
-      html += row('recent', 'Continuar assistindo', r);
-      html += row('alta', '🔥 Em alta agora', trendingItems());
+      html += row('jalta', '🔥 Jogos em alta', games().filter(function (g) { return g.trending && !g.shooter; }));
       html += row('tiro', '🔫 Tiro e Ação — nostalgia de fliperama', games().filter(function (g) { return g.shooter; }));
       html += Ads.banner();
+      html += row('familia', '👨‍👩‍👧 Para assistir em família', familyItems());
       html += row('abertos', catName('abertos'), catItems('abertos'));
-      html += row('jogos', '🎮 Jogos no controle remoto', games());
+      html += row('jogos', '🎮 Todos os jogos no controle remoto', games());
       cats.forEach(function (c) { if (c.id !== 'abertos') html += row(c.id, c.name, catItems(c.id)); });
     } else if (S.tab === 'kids') {
       html += '<section class="hero" style="padding:1.6rem 2.2rem"><h1 style="font-size:2rem">Cantinho Kids 🧸</h1><p style="margin:0">Desenhos e jogos para a criançada, tudo num lugar só.</p></section>';
@@ -930,6 +1009,7 @@
 
   function boot() {
     Prefs.detect();
+    loadCapas();
     S.token = lsGet('ap_token', null);
     var ref = (new URLSearchParams(location.search)).get('ref');
     if (ref) lsSet('ap_ref', ref);
