@@ -37,6 +37,10 @@
     document.body.appendChild(el);
     st = { list: list, index: index, el: el };
     st.off = Input.on(onAction);
+    el.addEventListener('click', function (e) {
+      if (e.target.closest && e.target.closest('button')) return;
+      if (!osdVisible()) { showOsd(); var b = el.querySelector('#mtoggle'); if (b) Input.focus(b); }
+    });
     build();
     play();
   }

@@ -21,6 +21,17 @@ Aponte a câmera do celular para o QR Code ou abra o link no celular/TV:
 
 O link sempre aponta para a versão mais nova (atualiza sozinho a cada mudança no projeto).
 
+## 🍎 iPhone e iPad
+
+O iPhone não instala APK. Use o app web (mesmo app, mesma tela):
+
+1. No iPhone, abra no **Safari**: **https://guiguitdp-dev.github.io/Accioly01/**
+2. Toque em **Compartilhar** (quadrado com seta ⬆️) → **Adicionar à Tela de Início**.
+3. Pronto: o Accioly Play fica com ícone e abre em tela cheia, com controle na tela para os jogos.
+
+> Primeira vez (dono): no GitHub, **Settings → Pages → Source: GitHub Actions**. Depois disso o site se atualiza sozinho.
+> Um app nativo na App Store exige Mac, conta de desenvolvedor Apple (US$ 99/ano) e aprovação da Apple.
+
 ## Começar com 1 clique
 
 - **Windows:** dê dois cliques em **`INSTALAR-WINDOWS.bat`** (instala o Node.js se faltar, monta o pendrive, **cria os atalhos na Área de Trabalho**, liga o servidor e abre o Painel do Dono). Para ligar junto com o Windows: **`INICIAR-COM-O-WINDOWS.bat`**.

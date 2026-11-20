@@ -68,7 +68,7 @@
   function games() {
     return GameHub.list().map(function (g) {
       var o = S.gameOverrides[g.id] || {};
-      return { id: g.id, name: g.name, emoji: g.emoji, color: g.color, desc: g.desc, help: g.help, trending: !!g.trending,
+      return { id: g.id, name: g.name, emoji: g.emoji, color: g.color, desc: g.desc, help: g.help, trending: !!g.trending, shooter: !!g.shooter,
         premium: o.premium != null ? o.premium : !!g.premium, enabled: o.enabled !== false, kind: 'game' };
     }).filter(function (g) { return g.enabled; });
   }
@@ -200,6 +200,8 @@
     var st = S.settings;
     if (!S.online && !LOCAL) html += '<div class="banner">Sem conexão com o servidor. Canais e jogos grátis continuam funcionando.</div>';
     if (st.announcement) html += '<div class="banner">' + esc(st.announcement) + '</div>';
+    if (S.tab === 'inicio' && /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.navigator.standalone && !lsGet('ap_ios_ok', false))
+      html += '<div class="banner" data-act="iosok">📲 Instale no iPhone: toque em <b>Compartilhar</b> (quadrado com seta ⬆️) → <b>Adicionar à Tela de Início</b>. Fica com ícone e tela cheia. (toque aqui para fechar)</div>';
     var cats = S.catalog.categories;
     var catName = function (id) { var c = cats.filter(function (x) { return x.id === id; })[0]; return c ? c.name : id; };
 
@@ -210,6 +212,7 @@
       var r = lsGet('ap_recent', []).map(itemById).filter(Boolean);
       html += row('recent', 'Continuar assistindo', r);
       html += row('alta', '🔥 Em alta agora', trendingItems());
+      html += row('tiro', '🔫 Tiro e Ação — nostalgia de fliperama', games().filter(function (g) { return g.shooter; }));
       html += Ads.banner();
       html += row('abertos', catName('abertos'), catItems('abertos'));
       html += row('jogos', '🎮 Jogos no controle remoto', games());
@@ -227,9 +230,15 @@
       html += row('filmes', catName('filmes'), catItems('filmes'));
       html += '<p class="note" style="margin:0 var(--safe)">Esses serviços são gratuitos e legais. Ao abrir, você vai para o app/site oficial.</p>';
     } else if (S.tab === 'jogos') {
-      rowsIndex.jogos = games();
-      html += '<section class="row"><h2>🎮 Jogos — use o controle remoto ou um controle de videogame</h2><div class="grid">' +
-        games().map(function (g) { return tile(g, 'jogos'); }).join('') + '</div></section>';
+      var all = games(), grid = function (id, title, list) {
+        if (!list.length) return '';
+        rowsIndex[id] = list;
+        return '<section class="row"><h2>' + esc(title) + ' <small>' + list.length + '</small></h2><div class="grid">' + list.map(function (g) { return tile(g, id); }).join('') + '</div></section>';
+      };
+      html += '<p class="note" style="margin:0 var(--safe) .6rem">🎮 Jogue com o controle remoto, um controle de videogame ou, no celular, com o controle que aparece na tela.</p>';
+      html += grid('jtiro', '🔫 Tiro e Ação', all.filter(function (g) { return g.shooter; }));
+      html += grid('jnovos', '🔥 Lançamentos', all.filter(function (g) { return g.trending && !g.shooter; }));
+      html += grid('jclassicos', '🕹️ Clássicos', all.filter(function (g) { return !g.trending && !g.shooter; }));
     } else if (S.tab === 'conta') {
       html += accountHtml();
     }
@@ -540,6 +549,7 @@
     if (act === 'login') return renderAuth('login');
     if (act === 'welcome') return renderWelcome();
     if (act === 'server') { if (window.AndroidTV && AndroidTV.resetServer) AndroidTV.resetServer(); return; }
+    if (act === 'iosok') { lsSet('ap_ios_ok', true); el.remove(); return; }
     if (act === 'local') { if (window.AndroidTV && AndroidTV.useLocal) AndroidTV.useLocal(); return; }
     if (act === 'close') return closeModal();
     if (act === 'paywall') return openPaywall();
