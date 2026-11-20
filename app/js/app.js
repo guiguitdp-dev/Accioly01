@@ -172,7 +172,7 @@
     return [
       { kicker: 'AO VIVO', title: st.heroTitle || 'Sua TV completa: canais ao vivo, filmes grátis e jogos no controle.', text: st.heroText || 'TV aberta, notícias 24h, esportes, novelas e desenhos — tudo de fontes oficiais, tocando aqui dentro.', c1: '#7c5cff', c2: '#ff7a45' },
       { kicker: 'LANÇAMENTO', title: '🎵 Música e Vídeos', text: 'Busque qualquer música ou clipe, veja o que está em alta no Brasil e toque em sequência. E ainda: música livre sem anúncios.', c1: '#22c55e', c2: '#0ea5e9', tab: 'midia', btn: '🎵 Abrir Música' },
-      { kicker: 'JOGOS EM ALTA', title: '🦫 Corre Capivara, ⚽ Pênaltis e mais', text: '13 jogos para jogar com o controle remoto — sozinho ou em família, com recordes.', c1: '#f59e0b', c2: '#ef4444', tab: 'jogos', btn: '🎮 Ver jogos' },
+      { kicker: 'JOGOS EM ALTA', title: '🦫 Corre Capivara, ⚽ Pênaltis e mais', text: '17 jogos para jogar com o controle remoto — sozinho ou em família, com recordes.', c1: '#f59e0b', c2: '#ef4444', tab: 'jogos', btn: '🎮 Ver jogos' },
       { kicker: 'KIDS', title: '🧸 Cantinho Kids', text: 'Desenhos e jogos para a criançada, tudo num lugar só.', c1: '#ec4899', c2: '#8b5cf6', tab: 'kids', btn: '🧸 Abrir Kids' }
     ];
   }
