@@ -140,6 +140,28 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
     await page.keyboard.press('Escape');
     await page.waitForSelector('#mediaplayer', { state: 'detached' });
 
+    console.log('Notícias do dia:');
+    await page.click('.tab[data-tab=inicio]');
+    await page.waitForSelector('[data-row=hnews] .ntile');
+    ok('tela inicial mostra "Últimas notícias"', (await page.locator('[data-row=hnews] .ntile').count()) >= 4);
+    await page.click('.tab[data-tab=noticias]');
+    await page.waitForSelector('#nrows .ntile');
+    ok('aba Notícias tem seções Brasil, Mundo, Economia, Esportes...', (await page.locator('#nrows [data-row^=n_]').count()) >= 6);
+    ok('aba Notícias mostra canais de notícias ao vivo', (await page.locator('[data-row=nlive] .tile').count()) >= 3);
+    await shot('07b-noticias');
+    await page.locator('[data-row=n_brasil] .ntile').first().focus();
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('.modal [data-act=nqr]');
+    ok('notícia abre o leitor com resumo e fonte', await page.isVisible('.modal >> text=Fonte:'));
+    await page.click('.modal [data-act=nqr]');
+    await page.waitForSelector('#nqrbox svg');
+    ok('"Ler no celular" mostra QR Code', true);
+    const t1 = await page.textContent('.modal h2');
+    await page.click('.modal [data-act=nnext]');
+    ok('"Próxima" troca de notícia', t1 !== await page.textContent('.modal h2'));
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('.modal', { state: 'detached' });
+
     await page.click('.tab[data-tab=conta]');
     ok('Minha Conta mostra código de indicação', await page.isVisible('text=Seu código'));
     await page.click('[data-act=ajustes]');
@@ -264,6 +286,28 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
     await pd.waitForSelector('.topbar');
     ok('abre direto do pendrive em Modo Dono', await pd.isVisible('text=Modo Dono'));
     ok('jogo premium liberado no Modo Dono', (await pd.locator('.tile[data-id=quiz] .lock').count()) === 0);
+
+    console.log('Pendrive vitrine (demonstração para vender):');
+    const vdir = path.join(tmp, 'pendrive-vitrine');
+    require('child_process').execFileSync(process.execPath, [path.join(__dirname, 'build-pendrive.js'), '--sem-noticias', '--whatsapp', '5511999999999', '--saida', vdir], { stdio: 'ignore' });
+    ok('pendrive tem arquivo para abrir, nome/ícone e instruções', ['ABRIR ACCIOLY PLAY.html', 'autorun.inf', 'COMO USAR.txt'].every((f) => fs.existsSync(path.join(vdir, f))));
+    const vt = await ctx.newPage();
+    vt.on('pageerror', (e) => { if (own(e)) errors.push('vitrine: ' + e.message); });
+    await vt.goto('file://' + path.join(vdir, 'ABRIR ACCIOLY PLAY.html'));
+    await vt.waitForSelector('#demopill');
+    ok('vitrine abre o menu principal com tudo liberado por tempo', /min/.test(await vt.textContent('#demopill')) && (await vt.locator('.tile[data-id=quiz] .lock').count()) === 0);
+    await vt.click('.topbar [data-act=buy]');
+    await vt.waitForSelector('#bq0 svg');
+    ok('convite para assinar mostra preço e QR do WhatsApp', await vt.isVisible('.modal >> text=Assinar pelo WhatsApp'));
+    await vt.keyboard.press('Escape');
+    await vt.evaluate(() => localStorage.setItem('ap_demo', JSON.stringify(Date.now() - 31 * 60000)));
+    await vt.reload();
+    await vt.waitForSelector('.topbar');
+    ok('depois do tempo, jogos premium pedem assinatura', (await vt.locator('.tile[data-id=quiz] .lock').count()) > 0);
+    await vt.locator('.tile[data-id=quiz]').first().click();
+    await vt.waitForSelector('.modal .buyqrs');
+    ok('canais e jogos grátis continuam liberados na vitrine', (await vt.locator('.tile[data-id=cobrinha] .lock').count()) === 0);
+    await vt.close();
 
     console.log('Todos os jogos (controle remoto aleatório):');
     const ids = await pd.evaluate(() => GameHub.list().map((g) => g.id));

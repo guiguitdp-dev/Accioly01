@@ -9,6 +9,9 @@
     "start": "node server/server.js",
     "checar-canais": "node scripts/check-channels.js",
     "pendrive": "node scripts/build-pendrive.js",
+    "pendrive:dono": "node scripts/build-pendrive.js --dono",
+    "video": "node scripts/demo-video.js",
+    "noticias": "node scripts/news.js --out dist/noticias/noticias.json --min 1",
     "teste": "node scripts/smoke-test.js",
     "relatorio": "node scripts/report.js"
   },

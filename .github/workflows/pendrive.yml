@@ -1,0 +1,65 @@
+# Monta o PENDRIVE VITRINE completo e publica para baixar:
+#   https://github.com/<dono>/<repo>/releases/download/app-latest/AcciolyPlay-Pendrive.zip
+# Dentro: app para computador (abre com 2 cliques), APK vitrine (Android TV/TV Box/celular),
+# vídeo de demonstração (Smart TV Samsung/LG tocam pelo USB) e as notícias do dia.
+# Roda sozinho depois de cada APK novo no main, ou em Actions > "Pendrive vitrine" > Run workflow.
+# WhatsApp/site no convite para assinar: Settings > Secrets and variables > Actions > Variables
+#   ACCIOLY_WHATSAPP = 5511999999999   ACCIOLY_SITE = https://seusite.com.br
+name: Pendrive vitrine
+
+on:
+  workflow_run:
+    workflows: ['Gerar APK Android TV']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      minutos:
+        description: 'Minutos de demonstração com tudo liberado'
+        required: false
+        default: '30'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pendrive
+  cancel-in-progress: true
+
+jobs:
+  pendrive:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ACCIOLY_WHATSAPP: ${{ vars.ACCIOLY_WHATSAPP }}
+      ACCIOLY_SITE: ${{ vars.ACCIOLY_SITE }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save playwright@1.48.2
+      - run: npx playwright install --with-deps chromium
+      - name: ffmpeg
+        run: command -v ffmpeg || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg)
+      - name: Baixar o APK vitrine
+        run: gh release download app-latest -p 'AcciolyPlay-Vitrine.apk' -D dist/apk || echo "Sem APK vitrine ainda"
+      - name: Montar o pendrive
+        run: node scripts/build-pendrive.js --com-video --minutos "${{ inputs.minutos || '30' }}"
+      - name: Gravar o vídeo de demonstração
+        run: |
+          node scripts/demo-video.js dist/pendrive/AcciolyPlay dist/video/VIDEO-DEMONSTRACAO.mp4
+          cp dist/video/VIDEO-DEMONSTRACAO.mp4 dist/pendrive/AcciolyPlay/
+          cp dist/video/VIDEO-DEMONSTRACAO.mp4 AcciolyPlay-Video.mp4
+      - name: Compactar
+        run: cd dist/pendrive/AcciolyPlay && zip -qr -9 ../../../AcciolyPlay-Pendrive.zip . && cd - && ls -la AcciolyPlay-Pendrive.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AcciolyPlay-Pendrive
+          path: AcciolyPlay-Pendrive.zip
+      - name: Publicar no link fixo
+        run: gh release upload app-latest AcciolyPlay-Pendrive.zip AcciolyPlay-Video.mp4 --clobber

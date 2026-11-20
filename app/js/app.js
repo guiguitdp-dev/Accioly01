@@ -6,6 +6,8 @@
   var isFile = location.protocol === 'file:';
   var API = (CFG.serverUrl || '').replace(/\/$/, '');
   var LOCAL = CFG.localMode === true || (CFG.localMode === 'auto' && isFile && !API);
+  // Vitrine (pendrive/APK de demonstração): acesso total por alguns minutos, depois convite para assinar
+  var DEMO = LOCAL && CFG.demo === true;
   var root = document.getElementById('root');
   var overlay = document.getElementById('overlay');
 
@@ -56,7 +58,15 @@
   }
 
   // ---------------- acesso ----------------
+  // Minutos de acesso total que ainda restam na vitrine (o teste recomeça 7 dias depois)
+  function demoLeft() {
+    if (!DEMO) return 0;
+    var st = lsGet('ap_demo', 0);
+    if (!st || Date.now() - st > 7 * 86400000) { st = Date.now(); lsSet('ap_demo', st); }
+    return Math.max(0, st + (Number(CFG.demoMinutes) || 30) * 60000 - Date.now());
+  }
   function access() {
+    if (DEMO) return { tv: true, premium: demoLeft() > 0 };
     if (LOCAL) return { tv: true, premium: true };
     if (!S.online) return { tv: true, premium: false };
     var u = S.user;
@@ -91,17 +101,33 @@
   // ---------------- telas ----------------
   function topbar() {
     var u = S.user, pill = '';
-    if (LOCAL) pill = '<span class="pill active">Modo Dono</span>';
+    if (DEMO) pill = '<span class="pill trial" id="demopill">' + demoPill() + '</span><button class="tab buy focusable" data-act="buy">⭐ Assinar</button>';
+    else if (LOCAL) pill = '<span class="pill active">Modo Dono</span>';
     else if (!S.online) pill = '<span class="pill expired">Offline</span>';
     else if (u && u.status === 'trial') pill = '<span class="pill trial">Teste grátis: ' + daysLeft(u.trialEndsAt) + ' dia(s)</span>';
     else if (u && u.status === 'active') pill = '<span class="pill active">Assinante até ' + fmtDate(u.paidUntil) + '</span>';
     else if (u) pill = '<span class="pill expired">Teste encerrado</span>';
-    var tabs = [['inicio', 'Início'], ['tv', 'TV ao Vivo'], ['filmes', 'Filmes'], ['midia', '🎵 Música'], ['jogos', 'Jogos'], ['kids', 'Kids 🧸'], ['conta', 'Conta']];
+    var tabs = [['inicio', 'Início'], ['tv', 'TV ao Vivo'], ['noticias', '📰 Notícias'], ['filmes', 'Filmes'], ['midia', '🎵 Música'], ['jogos', 'Jogos'], ['kids', 'Kids 🧸'], ['conta', 'Conta']];
     return '<header class="topbar"><div class="brand">' + brandHtml() + '</div><nav class="tabs" data-row="tabs">' +
       tabs.map(function (t) { return '<button class="tab focusable' + (S.tab === t[0] ? ' active' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') +
       '</nav><div class="spacer"></div><span class="clock" id="clock">' + clockText() + '</span>' + pill +
       '<button class="tab gear focusable" data-act="ajustes" aria-label="Ajustes">⚙️</button></header>';
   }
+
+  function demoPill() {
+    var m = Math.ceil(demoLeft() / 60000);
+    return m > 0 ? 'Demo · ' + m + ' min' : 'Demonstração';
+  }
+  // Atualiza o contador e, quando o tempo acaba, mostra o convite (sem interromper vídeo ou jogo)
+  if (DEMO) setInterval(function () {
+    var p = document.getElementById('demopill');
+    if (p) p.textContent = demoPill();
+    if (demoLeft() > 0 || S.demoShown) return;
+    if (Player.isOpen() || GameHub.isOpen() || MediaPlayer.isOpen() || S.modalOpen || !root.querySelector('.topbar')) return;
+    S.demoShown = true;
+    renderHome();
+    openBuy('Seu tempo de demonstração com tudo liberado terminou. Os canais, as notícias e os jogos grátis continuam funcionando.');
+  }, 20000);
 
   function brandHtml() {
     var n = S.settings.productName || 'Accioly Play';
@@ -172,6 +198,7 @@
     var st = S.settings;
     return [
       { kicker: 'AO VIVO', title: st.heroTitle || 'Sua TV completa: canais ao vivo, filmes grátis e jogos no controle.', text: st.heroText || 'TV aberta, notícias 24h, esportes, novelas e desenhos — tudo de fontes oficiais, tocando aqui dentro.', c1: '#7c5cff', c2: '#ff7a45' },
+      { kicker: 'NOVIDADE', title: '📰 Notícias do dia a dia', text: 'O que está acontecendo no Brasil e no mundo, atualizado de hora em hora. Ouça o resumo do dia em voz alta ou leia no celular.', c1: '#0ea5e9', c2: '#6366f1', tab: 'noticias', btn: '📰 Ver notícias' },
       { kicker: 'LANÇAMENTO', title: '🎵 Música e Vídeos', text: 'Busque qualquer música ou clipe, veja o que está em alta no Brasil e toque em sequência. E ainda: música livre sem anúncios.', c1: '#22c55e', c2: '#0ea5e9', tab: 'midia', btn: '🎵 Abrir Música' },
       { kicker: 'JOGOS EM ALTA', title: '🦫 Corre Capivara, ⚽ Pênaltis e mais', text: '17 jogos para jogar com o controle remoto — sozinho ou em família, com recordes.', c1: '#f59e0b', c2: '#ef4444', tab: 'jogos', btn: '🎮 Ver jogos' },
       { kicker: 'KIDS', title: '🧸 Cantinho Kids', text: 'Desenhos e jogos para a criançada, tudo num lugar só.', c1: '#ec4899', c2: '#8b5cf6', tab: 'kids', btn: '🧸 Abrir Kids' }
@@ -180,6 +207,7 @@
   function heroHtml() {
     var st = S.settings, acc = access(), s = heroSlides()[S.heroIdx || 0];
     var cta = '';
+    if (DEMO) cta = '<button class="btn hot focusable" data-act="buy">⭐ Quero assinar</button>';
     if (!LOCAL && S.online && S.user && !acc.premium) cta = '<button class="btn hot focusable" data-act="paywall">Assinar por ' + money(st.promoRemaining > 0 ? st.promoPrice : st.regularPrice) + '/mês</button>';
     return '<section class="hero" id="hero" style="--h1:' + s.c1 + ';--h2:' + s.c2 + '"><span class="kicker">' + esc(s.kicker) + '</span><h1>' + esc(s.title) + '</h1><p>' + esc(s.text) + '</p><div class="actions" data-row="hero">' +
       '<button class="btn primary focusable" data-act="watch">▶ Assistir agora</button>' +
@@ -195,12 +223,30 @@
     bindRoot(document.getElementById('hero'));
   }, 8000);
 
+  // Atalhos para tudo o que o app tem (para ninguém deixar de achar)
+  function quickRow() {
+    var q = [['data-tab="noticias"', '📰', 'Notícias do dia', 'Brasil e mundo', '#0ea5e9'],
+      News.canSpeak() ? ['data-act="nbrief"', '🔊', 'Resumo do dia', 'ouça as notícias', '#6366f1'] : null,
+      ['data-tab="tv"', '📡', 'TV ao vivo', 'canais oficiais', '#e11d48'],
+      ['data-tab="midia"', '🎵', 'Música e vídeos', 'busque o que quiser', '#22c55e'],
+      ['data-tab="jogos"', '🎮', '17 jogos', 'no controle remoto', '#f59e0b'],
+      ['data-tab="kids"', '🧸', 'Kids', 'desenhos e jogos', '#ec4899'],
+      ['data-act="ajustes"', '⚙️', 'Ajustes', 'tela, som, legendas', '#64748b']].filter(Boolean);
+    return '<section class="row"><h2>⚡ Atalhos</h2><div class="track" data-row="atalhos">' + q.map(function (x) {
+      return '<button class="tile qk focusable" style="--c:' + x[4] + '" ' + x[0] + '><span class="emoji">' + x[1] + '</span><span class="name">' + x[2] + '</span><span class="sub">' + x[3] + '</span></button>';
+    }).join('') + '</div></section>';
+  }
+
   function renderHome() {
     rowsIndex = {};
+    if (S.briefing && S.tab !== 'noticias') { News.stop(); S.briefing = false; }
     var html = topbar();
     var st = S.settings;
     if (!S.online && !LOCAL) html += '<div class="banner">Sem conexão com o servidor. Canais e jogos grátis continuam funcionando.</div>';
     if (st.announcement) html += '<div class="banner">' + esc(st.announcement) + '</div>';
+    if (DEMO && S.tab === 'inicio') html += '<div class="banner demo" data-act="buy">' + (demoLeft() > 0
+      ? '🎁 <b>Demonstração com tudo liberado</b> por mais ' + Math.ceil(demoLeft() / 60000) + ' minutos: jogos premium, música, vídeos e notícias. Gostou? Toque aqui para assinar.'
+      : '⭐ <b>Gostou?</b> Assine o Accioly Play e libere os jogos premium, música e vídeos. Canais, notícias e jogos grátis continuam liberados. Toque aqui.') + '</div>';
     if (S.tab === 'inicio' && /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.navigator.standalone && !lsGet('ap_ios_ok', false))
       html += '<div class="banner" data-act="iosok">📲 Instale no iPhone: toque em <b>Compartilhar</b> (quadrado com seta ⬆️) → <b>Adicionar à Tela de Início</b>. Fica com ícone e tela cheia. (toque aqui para fechar)</div>';
     var cats = S.catalog.categories;
@@ -208,6 +254,8 @@
 
     if (S.tab === 'inicio') {
       html += heroHtml();
+      html += quickRow();
+      html += '<div id="homenews"></div>';
       var f = favs().map(itemById).filter(Boolean);
       html += row('favs', '★ Meus Favoritos', f);
       var r = lsGet('ap_recent', []).map(itemById).filter(Boolean);
@@ -227,6 +275,8 @@
       cats.forEach(function (c) { if (c.id !== 'filmes') html += row(c.id, c.name, catItems(c.id)); });
     } else if (S.tab === 'midia') {
       html += mediaTabHtml();
+    } else if (S.tab === 'noticias') {
+      html += '<div id="nrows"><div class="spinner"></div></div>';
     } else if (S.tab === 'filmes') {
       html += row('filmes', catName('filmes'), catItems('filmes'));
       html += '<p class="note" style="margin:0 var(--safe)">Esses serviços são gratuitos e legais. Ao abrir, você vai para o app/site oficial.</p>';
@@ -249,6 +299,8 @@
     bindRoot();
     Ads.fillBanners(root);
     if (S.tab === 'midia') loadMedia();
+    if (S.tab === 'noticias') loadNews();
+    if (S.tab === 'inicio') loadHomeNews();
     var kf = root.querySelector('#keyf');
     if (kf) kf.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -322,6 +374,101 @@
       var first = root.querySelector('#mrows .tile');
       if (first) Input.focus(first);
     }).catch(function (e) { box.innerHTML = '<p class="err" style="margin:0 var(--safe)">' + esc(e.message) + '</p>'; });
+  }
+
+
+  // ---------------- Notícias do dia a dia ----------------
+  function newsBase() { return (LOCAL || !S.online) ? null : API; }
+  function newsTile(n, rowId, i) {
+    return '<button class="tile ntile focusable" style="--c:#13203d" data-nrow="' + esc(rowId) + '" data-i="' + i + '">' +
+      (n.img ? '<img class="nimg" src="' + esc(n.img) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '') +
+      '<span class="badge news">' + esc(n.src) + '</span><span class="name">' + esc(n.t) + '</span><span class="sub">' + esc(News.ago(n.d)) + '</span></button>';
+  }
+  function newsRow(id, title, items) {
+    if (!items || !items.length) return '';
+    S.newsRows = S.newsRows || {};
+    S.newsRows[id] = items;
+    return '<section class="row"><h2>' + esc(title) + ' <small>' + items.length + '</small></h2><div class="track" data-row="' + esc(id) + '">' +
+      items.map(function (n, i) { return newsTile(n, id, i); }).join('') + '</div></section>';
+  }
+  function loadHomeNews() {
+    News.load(newsBase()).then(function (d) {
+      S.news = d;
+      var el = root.querySelector('#homenews');
+      if (!el || S.tab !== 'inicio') return;
+      el.innerHTML = newsRow('hnews', '📰 Últimas notícias — Brasil e mundo', (d.top || []).slice(0, 12));
+      bindRoot(el);
+    }).catch(function () {});
+  }
+  function loadNews(force) {
+    News.load(newsBase(), force).then(function (d) {
+      S.news = d;
+      if (S.tab === 'noticias' && root.querySelector('#nrows')) drawNews(d);
+    }).catch(function () {
+      var box = root.querySelector('#nrows');
+      if (box) box.innerHTML = '<p class="note" style="margin:0 var(--safe)">Não foi possível carregar as notícias agora. Confira a internet e tente de novo.</p>' +
+        '<div class="inline" style="margin:1rem var(--safe)" data-row="nerr"><button class="btn primary focusable" data-act="nrefresh">🔄 Tentar de novo</button></div>' + row('nlive', '📺 Notícias ao vivo agora', catItems('noticias'));
+      if (box) bindRoot(box);
+    });
+  }
+  function drawNews(d) {
+    var box = root.querySelector('#nrows');
+    var srcs = {};
+    d.sections.forEach(function (s) { s.items.forEach(function (n) { srcs[n.src] = 1; }); });
+    var html = '<div class="newshead"><div><h1>📰 Notícias do dia</h1><p class="note">Brasil e mundo · atualizado ' + esc(News.ago(d.updatedAt)) + ' · ' + d.total + ' notícias de ' + esc(Object.keys(srcs).slice(0, 8).join(', ')) + '</p></div>' +
+      '<div class="inline" data-row="nhead">' + (News.canSpeak() ? '<button class="btn primary focusable" data-act="nbrief">' + (S.briefing ? '⏹ Parar resumo' : '🔊 Ouvir o resumo do dia') + '</button>' : '') +
+      '<button class="btn ghost focusable" data-act="nrefresh">🔄 Atualizar</button></div></div>';
+    html += row('nlive', '📺 Notícias ao vivo agora', catItems('noticias'));
+    html += newsRow('ntop', '⚡ Destaques de agora', d.top);
+    d.sections.forEach(function (s) { html += newsRow('n_' + s.id, s.title, s.items); });
+    html += '<p class="note" style="margin:0 var(--safe) 2rem">Títulos e resumos publicados pelos próprios veículos (feeds oficiais). Para a matéria completa, abra no site ou leia no celular pelo QR Code.</p>';
+    box.innerHTML = html;
+    bindRoot(box);
+  }
+  function curNews() { var c = S.newsCur; return c && (S.newsRows[c.row] || [])[c.i]; }
+  function openNews(rowId, i) {
+    var list = (S.newsRows || {})[rowId] || [], n = list[i];
+    if (!n) return;
+    var keep = S.modalOpen ? S.lastFocus : null;
+    News.stop(); S.briefing = false;
+    openModal((n.img ? '<img class="nhero" src="' + esc(n.img) + '" alt="" referrerpolicy="no-referrer" onerror="this.remove()">' : '') +
+      '<p class="nmeta"><span class="badge news">' + esc(n.src) + '</span> ' + esc(News.ago(n.d)) + '</p>' +
+      '<h2>' + esc(n.t) + '</h2>' + (n.s ? '<p class="nsum">' + esc(n.s) + '</p>' : '') + '<div id="nqrbox"></div>' +
+      '<div class="inline" data-row="nd">' + (News.canSpeak() ? '<button class="btn primary focusable" data-act="nspeak">🔊 Ouvir</button>' : '') +
+      '<button class="btn ghost focusable" data-act="nqr">📱 Ler no celular</button>' +
+      '<button class="btn ghost focusable" data-act="nopen">↗ Abrir no site</button>' +
+      (i < list.length - 1 ? '<button class="btn ghost focusable" data-act="nnext">Próxima ▶</button>' : '') +
+      '<button class="btn ghost focusable" data-act="close">Voltar</button></div>' +
+      '<p class="note">Fonte: ' + esc(n.src) + '. Resumo publicado pelo próprio veículo.</p>', function () { News.stop(); });
+    if (keep) S.lastFocus = keep;
+    S.newsCur = { row: rowId, i: i };
+    track('news', rowId.replace(/^n_/, ''));
+  }
+  function newsAct(act, el) {
+    var n = curNews();
+    if (act === 'nbrief' && el.classList.contains('qk')) {
+      return News.load(newsBase()).then(function (d) {
+        S.news = d;
+        if (!News.speak(News.briefing(d))) return toast('Este aparelho não tem voz para ler em voz alta.');
+        S.briefing = true; toast('🔊 Lendo as principais notícias do dia… (na aba Notícias dá para parar)');
+      }).catch(function () { toast('Sem notícias agora. Confira a internet.'); });
+    }
+    if (act === 'nbrief') {
+      if (S.briefing) { News.stop(); S.briefing = false; el.textContent = '🔊 Ouvir o resumo do dia'; return; }
+      if (!S.news || !News.speak(News.briefing(S.news))) return toast('Este aparelho não tem voz para ler em voz alta.');
+      S.briefing = true; el.textContent = '⏹ Parar resumo'; return toast('🔊 Lendo as principais notícias do dia…');
+    }
+    if (act === 'nrefresh') { var b = root.querySelector('#nrows'); if (b) b.innerHTML = '<div class="spinner"></div>'; return loadNews(true); }
+    if (!n) return;
+    if (act === 'nspeak') { if (!News.speak(n.t + '. ' + (n.s || '') + ' Fonte: ' + n.src + '.')) toast('Este aparelho não tem voz para ler em voz alta.'); return; }
+    if (act === 'nopen') return openExternal(n.u);
+    if (act === 'nnext') return openNews(S.newsCur.row, S.newsCur.i + 1);
+    if (act === 'nqr') {
+      var box = overlay.querySelector('#nqrbox');
+      return loadQr().then(function () {
+        box.innerHTML = '<div class="nqr"><div class="qr">' + qrSvg(n.u) + '</div><p class="note">Aponte a câmera do celular para ler a matéria completa.</p></div>';
+      }).catch(function () { toast('Não foi possível gerar o QR Code.'); });
+    }
   }
 
   // Desbloqueio de jogo premium por anúncio recompensado (30 min)
@@ -475,7 +622,31 @@
   }
 
   // ---------------- assinatura ----------------
+  function buyLinks() {
+    var w = String(CFG.buyWhatsapp || '').replace(/\D/g, ''), out = [];
+    if (w) out.push({ label: '💬 WhatsApp', note: 'Assinar pelo WhatsApp', url: 'https://wa.me/' + w + '?text=' + encodeURIComponent('Olá! Vi o Accioly Play e quero assinar.') });
+    if (/^https?:\/\//.test(CFG.buySite || '')) out.push({ label: '🌐 Site', note: 'Assinar pelo site', url: CFG.buySite });
+    return out;
+  }
+  // Convite para assinar na vitrine (sem servidor: o pagamento é pelo WhatsApp ou pelo site do dono)
+  function openBuy(reason) {
+    var st = S.settings, links = buyLinks();
+    openModal('<h2>Gostou do ' + esc(st.productName) + '? ⭐</h2>' +
+      (reason ? '<p>' + esc(reason) + '</p>' : '') +
+      '<p>TV ao vivo de fontes oficiais, notícias do dia, 17 jogos no controle remoto, música e vídeos — tudo num lugar só, na TV, no computador e no celular.</p>' +
+      '<div class="price">' + money(st.promoPrice) + ' <small>/ mês</small></div>' +
+      '<p class="note">Preço de fundador para os ' + st.promoSlots + ' primeiros assinantes (depois ' + money(st.regularPrice) + '/mês). Teste grátis de ' + st.trialDays + ' dias.</p>' +
+      (links.length ? '<div class="buyqrs" id="buyqrs">' + links.map(function (l, i) { return '<div class="buyqr"><div class="qr" id="bq' + i + '"></div><span>' + esc(l.note) + '</span></div>'; }).join('') + '</div>'
+        : '<p class="note">Para assinar, fale com quem te mostrou o Accioly Play.</p>') +
+      '<div class="inline" data-row="buy">' + links.map(function (l) { return '<button class="btn primary focusable" data-act="openlink" data-url="' + esc(l.url) + '">' + l.label + '</button>'; }).join('') +
+      '<button class="btn ghost focusable" data-act="close">Continuar vendo</button></div>');
+    if (links.length) loadQr().then(function () {
+      links.forEach(function (l, i) { var b = overlay.querySelector('#bq' + i); if (b) b.innerHTML = qrSvg(l.url); });
+    }).catch(function () {});
+  }
+
   function openPaywall(reason, game) {
+    if (DEMO) return openBuy(reason);
     if (LOCAL) return;
     S.rewardGame = game || null;
     if (!S.user) { renderAuth('register'); return; }
@@ -554,8 +725,11 @@
     scope.querySelectorAll('[data-tab]').forEach(function (b) {
       b.addEventListener('click', function () { S.tab = b.getAttribute('data-tab'); S.lastFocusSel = '.tab[data-tab="' + S.tab + '"]'; renderHome(); });
     });
-    scope.querySelectorAll('.tile').forEach(function (b) {
+    scope.querySelectorAll('.tile:not(.ntile):not(.qk)').forEach(function (b) {
       b.addEventListener('click', function () { openItem(b.getAttribute('data-id'), b.getAttribute('data-rowid')); });
+    });
+    scope.querySelectorAll('.ntile').forEach(function (b) {
+      b.addEventListener('click', function () { openNews(b.getAttribute('data-nrow'), +b.getAttribute('data-i')); });
     });
     scope.querySelectorAll('[data-act]').forEach(bindAct);
   }
@@ -569,7 +743,9 @@
     if (act === 'iosok') { lsSet('ap_ios_ok', true); el.remove(); return; }
     if (act === 'local') { if (window.AndroidTV && AndroidTV.useLocal) AndroidTV.useLocal(); return; }
     if (act === 'close') return closeModal();
+    if (/^n(brief|refresh|speak|open|next|qr)$/.test(act)) return newsAct(act, el);
     if (act === 'paywall') return openPaywall();
+    if (act === 'buy') return openBuy();
     if (act === 'pix') return checkout('pix');
     if (act === 'mtipo') { S.mediaTipo = S.mediaTipo === 'videos' ? 'music' : 'videos'; el.textContent = S.mediaTipo === 'videos' ? '🎬 Vídeos' : '🎵 Músicas'; return; }
     if (act === 'reward') {
@@ -604,6 +780,7 @@
 
   function openItem(id, rowId) {
     S.lastFocus = document.activeElement;
+    if (S.briefing) { News.stop(); S.briefing = false; }
     var list = rowsIndex[rowId] || [];
     var it = list.filter(function (x) { return x.id === id; })[0] || itemById(id);
     if (!it) return;

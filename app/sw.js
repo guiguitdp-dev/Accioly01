@@ -1,6 +1,6 @@
 /* Service worker: deixa o app abrir rápido e os jogos funcionarem mesmo com internet ruim. */
-var CACHE = 'accioly-play-v6';
-var SHELL = ['./', 'index.html', 'css/app.css', 'css/futuro.css', 'js/options.js', 'vendor/fonts/orbitron-latin-700-normal.woff2', 'vendor/fonts/orbitron-latin-900-normal.woff2', 'js/config.js', 'js/catalog.js', 'js/input.js', 'js/player.js', 'js/app.js', 'js/ads.js', 'js/media.js', 'js/localmedia.js',
+var CACHE = 'accioly-play-v7';
+var SHELL = ['./', 'index.html', 'css/app.css', 'css/futuro.css', 'js/options.js', 'vendor/fonts/orbitron-latin-700-normal.woff2', 'vendor/fonts/orbitron-latin-900-normal.woff2', 'js/config.js', 'js/catalog.js', 'js/input.js', 'js/player.js', 'js/app.js', 'js/ads.js', 'js/media.js', 'js/localmedia.js', 'js/news.js', 'js/noticias-snapshot.js',
   'js/games/hub.js', 'js/games/cobrinha.js', 'js/games/quebrablocos.js', 'js/games/pingpong.js', 'js/games/meteoros.js',
   'js/games/memoria.js', 'js/games/quiz.js', 'js/games/velha.js', 'js/games/corrida.js',
   'js/games/frutas.js', 'js/games/blocos.js', 'js/games/penaltis.js', 'js/games/palavra.js', 'js/games/capivara.js',

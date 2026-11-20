@@ -21,6 +21,12 @@ Aponte a câmera do celular para o QR Code ou abra o link no celular/TV:
 
 O link sempre aponta para a versão mais nova (atualiza sozinho a cada mudança no projeto).
 
+## 💾 Pendrive vitrine (mostrar e vender)
+
+**https://github.com/guiguitdp-dev/Accioly01/releases/download/app-latest/AcciolyPlay-Pendrive.zip** — descompacte e copie tudo para a raiz do pendrive.
+Abre com 2 cliques no computador, instala na Android TV/TV Box/celular (APK vitrine) e traz um **vídeo de demonstração** para Smart TVs. A pessoa usa **tudo liberado por 30 minutos** e depois vê o convite **"Gostou? Assine"** com QR Code do seu WhatsApp. Detalhes: [docs/INSTALAR-NA-TV.md](docs/INSTALAR-NA-TV.md).
+Vídeo para divulgar: **https://github.com/guiguitdp-dev/Accioly01/releases/download/app-latest/AcciolyPlay-Video.mp4**
+
 ## 🍎 iPhone e iPad
 
 O iPhone não instala APK. Use o app web (mesmo app, mesma tela):
@@ -51,9 +57,11 @@ npm start
 # 3. Na TV (mesma rede Wi-Fi), abra o endereço que aparece como "Na TV".
 ```
 
-Pendrive para uso próprio (tudo liberado, sem login):
+Pendrive:
 ```bash
-npm run pendrive      # gera dist/pendrive/AcciolyPlay -> copie para o pendrive
+npm run pendrive -- --whatsapp 5511999999999   # VITRINE: 30 min liberado e depois convite para assinar
+npm run pendrive:dono                          # uso próprio: tudo liberado, sem login
+npm run video                                  # grava o vídeo de demonstração (precisa de Playwright e ffmpeg)
 ```
 
 Passo a passo completo: **[docs/INSTALAR-NA-TV.md](docs/INSTALAR-NA-TV.md)** · Colocar online para vender: **[docs/HOSPEDAR.md](docs/HOSPEDAR.md)**
@@ -67,6 +75,8 @@ Passo a passo completo: **[docs/INSTALAR-NA-TV.md](docs/INSTALAR-NA-TV.md)** · 
 | **App da TV** (`app/`) | Telas estilo streaming, navegação só com setas + OK + VOLTAR, player de canais ao vivo (troca de canal com ▲▼), fileira **🔥 Em alta**, aba **Kids**, favoritos, "continuar assistindo", recordes nos jogos, aviso de canal fora do ar, vídeos recentes quando o canal do YouTube não está ao vivo, Pix por QR Code na própria TV |
 | **Visual do futuro + opções** (`css/futuro.css`, `js/options.js`) | Tema neon/vidro com fonte futurista; **⚙️ Opções no vídeo**: qualidade, tamanho da imagem (ajustar/preencher/esticar/zoom), legendas, velocidade e volume; **⚙️ Opções nos jogos**: som, vibração do controle, gráficos (máximo/leve), tela cheia e FPS; **⚙️ Ajustes**: visual, tamanho da tela (letras grandes), legendas. Modo leve automático em TV/TV Box fraca |
 | **17 jogos** (`app/js/games/`) | **Em alta:** Festa das Frutas (combinar 3), Blocos Encaixe (block puzzle), Disputa de Pênaltis, Palavra Secreta (palavra do dia), Corre Capivara (corrida infinita). **Tiro e Ação (nostalgia):** Esquadrilha 2000, Comando Retrô, Mira Certeira, Operação 3D (3D retrô em primeira pessoa). **Clássicos:** Cobrinha Neon, Quebra-Blocos, Pingue-Pongue (2 jogadores), Chuva de Meteoros, Memória Brasil, Quiz Brasil, Jogo da Velha, Corrida Neon — 5 grátis, 8 premium (configurável) |
+| **📰 Notícias do dia** (`app/js/news.js`, `server/lib/news.js`) | Brasil, Mundo, Economia, Esportes, Tecnologia, Saúde e Cultura dos feeds oficiais (Agência Brasil, g1, Folha, BBC News Brasil, DW, ONU News...), **atualizadas de hora em hora** pelo GitHub Actions (ramo `noticias-dados`), canais de notícias ao vivo, **🔊 ouvir em voz alta**, resumo do dia e **📱 ler no celular** por QR Code |
+| **Vitrine** (`npm run pendrive`) | Demonstração com tempo (30 min) e convite para assinar com QR Code do WhatsApp/site; APK vitrine, ZIP do pendrive e vídeo de demonstração gerados sozinhos |
 | **Música e Vídeos** (`app/js/media.js`) | Busca oficial do YouTube (músicas e vídeos em alta no Brasil, toca em sequência) + **Música livre sem anúncios** (Audius). Veja [docs/ANUNCIOS-E-YOUTUBE.md](docs/ANUNCIOS-E-YOUTUBE.md) |
 | **Anúncios que pagam você** (`app/js/ads.js`) | Só para quem não assina: **AdSense** no navegador (entre partidas, "ver 1 anúncio e jogar 30 min", banner) e **AdMob** no app Android (tela cheia e premiado). `ads.txt`, `app-ads.txt` e `/privacidade` automáticos |
 | **Canais** (`app/js/catalog.js`) | 71 itens (64 tocam dentro do app): TV aberta, notícias 24h, esportes, filmes/novelas grátis, infantil, educação, fé. Só fontes oficiais |
@@ -82,7 +92,8 @@ Passo a passo completo: **[docs/INSTALAR-NA-TV.md](docs/INSTALAR-NA-TV.md)** · 
 | Comando | Para quê |
 |---|---|
 | `npm start` | Liga o servidor (site, app e painel) |
-| `npm run pendrive` | Monta a pasta do pendrive (`-- --servidor https://...` para versão de clientes) |
+| `npm run pendrive` | Monta o pendrive vitrine (`:dono` = tudo liberado; `-- --servidor https://...` = clientes) |
+| `npm run noticias` | Junta as notícias do dia (teste local) |
 | `npm run checar-canais` | Verifica todos os canais (sem IA, sem custo) |
 | `npm run teste` | Teste automático com navegador simulando o controle remoto |
 | `npm run relatorio` | Relatório resumido para os agentes de IA (sem dados pessoais) |

@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.speech.tts.TextToSpeech;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
@@ -26,6 +27,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,6 +40,10 @@ import java.util.regex.Pattern;
  * (Globoplay, Pluto TV, YouTube...) quando o usuário escolhe um "link oficial".
  */
 public class MainActivity extends Activity {
+    /** Voz do aparelho para "ouvir a notícia" (a WebView não tem voz própria). */
+    private TextToSpeech tts;
+    private boolean ttsReady = false;
+
 
     private WebView web;
     private String base;
@@ -280,6 +286,36 @@ public class MainActivity extends Activity {
         public void resetServer() {
             runOnUiThread(MainActivity.this::showSetup);
         }
+
+        // ---- Ouvir notícias (voz do Android, em português) ----
+        @JavascriptInterface
+        public boolean canSpeak() {
+            return true;
+        }
+
+        @JavascriptInterface
+        public void speak(final String text) {
+            runOnUiThread(() -> {
+                if (tts == null) {
+                    tts = new TextToSpeech(MainActivity.this, status -> {
+                        ttsReady = status == TextToSpeech.SUCCESS;
+                        if (ttsReady) {
+                            tts.setLanguage(new Locale("pt", "BR"));
+                            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "noticia");
+                        } else {
+                            Toast.makeText(MainActivity.this, "Este aparelho não tem voz instalada.", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                } else if (ttsReady) {
+                    tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "noticia");
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void stopSpeak() {
+            runOnUiThread(() -> { if (tts != null) tts.stop(); });
+        }
     }
 
     @Override
@@ -327,7 +363,14 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
+        if (tts != null) tts.stop();
         web.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (tts != null) tts.shutdown();
+        super.onDestroy();
     }
 
     @Override
