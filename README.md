@@ -1,6 +1,6 @@
 # Accioly Play 📺🎮
 
-**Sua TV mais divertida:** canais ao vivo de fontes oficiais, filmes/séries/novelas grátis organizados e **13 jogos para jogar com o controle remoto** (ou controle de videogame) — com **Painel do Dono**, **teste grátis** e **assinatura** (R$ 15,99 para os 50 primeiros).
+**Sua TV mais divertida:** canais ao vivo de fontes oficiais, filmes/séries/novelas grátis organizados e **17 jogos para jogar com o controle remoto** (ou controle de videogame) — com **Painel do Dono**, **teste grátis** e **assinatura** (R$ 15,99 para os 50 primeiros).
 
 Funciona em **Android TV / Google TV / TV Box / Fire TV** (instala pelo pendrive), **Smart TV Samsung/LG** (pelo navegador), **computador** (pelo pendrive) e **celular**.
 
@@ -20,6 +20,17 @@ Aponte a câmera do celular para o QR Code ou abra o link no celular/TV:
 4. Para a busca do YouTube no aparelho: **Conta → Chave do YouTube** (grátis, veja `docs/ANUNCIOS-E-YOUTUBE.md`).
 
 O link sempre aponta para a versão mais nova (atualiza sozinho a cada mudança no projeto).
+
+## 🍎 iPhone e iPad
+
+O iPhone não instala APK. Use o app web (mesmo app, mesma tela):
+
+1. No iPhone, abra no **Safari**: **https://guiguitdp-dev.github.io/Accioly01/**
+2. Toque em **Compartilhar** (quadrado com seta ⬆️) → **Adicionar à Tela de Início**.
+3. Pronto: o Accioly Play fica com ícone e abre em tela cheia, com controle na tela para os jogos.
+
+> Primeira vez (dono): no GitHub, **Settings → Pages → Source: GitHub Actions**. Depois disso o site se atualiza sozinho.
+> Um app nativo na App Store exige Mac, conta de desenvolvedor Apple (US$ 99/ano) e aprovação da Apple.
 
 ## Começar com 1 clique
 
@@ -54,7 +65,7 @@ Passo a passo completo: **[docs/INSTALAR-NA-TV.md](docs/INSTALAR-NA-TV.md)** · 
 | Parte | O que faz |
 |---|---|
 | **App da TV** (`app/`) | Telas estilo streaming, navegação só com setas + OK + VOLTAR, player de canais ao vivo (troca de canal com ▲▼), fileira **🔥 Em alta**, aba **Kids**, favoritos, "continuar assistindo", recordes nos jogos, aviso de canal fora do ar, vídeos recentes quando o canal do YouTube não está ao vivo, Pix por QR Code na própria TV |
-| **13 jogos** (`app/js/games/`) | **Em alta:** Festa das Frutas (combinar 3), Blocos Encaixe (block puzzle), Disputa de Pênaltis, Palavra Secreta (palavra do dia), Corre Capivara (corrida infinita). **Clássicos:** Cobrinha Neon, Quebra-Blocos, Pingue-Pongue (2 jogadores), Chuva de Meteoros, Memória Brasil, Quiz Brasil, Jogo da Velha, Corrida Neon — 5 grátis, 8 premium (configurável) |
+| **17 jogos** (`app/js/games/`) | **Em alta:** Festa das Frutas (combinar 3), Blocos Encaixe (block puzzle), Disputa de Pênaltis, Palavra Secreta (palavra do dia), Corre Capivara (corrida infinita). **Tiro e Ação (nostalgia):** Esquadrilha 2000, Comando Retrô, Mira Certeira, Operação 3D (3D retrô em primeira pessoa). **Clássicos:** Cobrinha Neon, Quebra-Blocos, Pingue-Pongue (2 jogadores), Chuva de Meteoros, Memória Brasil, Quiz Brasil, Jogo da Velha, Corrida Neon — 5 grátis, 8 premium (configurável) |
 | **Música e Vídeos** (`app/js/media.js`) | Busca oficial do YouTube (músicas e vídeos em alta no Brasil, toca em sequência) + **Música livre sem anúncios** (Audius). Veja [docs/ANUNCIOS-E-YOUTUBE.md](docs/ANUNCIOS-E-YOUTUBE.md) |
 | **Anúncios que pagam você** (`app/js/ads.js`) | Só para quem não assina: **AdSense** no navegador (entre partidas, "ver 1 anúncio e jogar 30 min", banner) e **AdMob** no app Android (tela cheia e premiado). `ads.txt`, `app-ads.txt` e `/privacidade` automáticos |
 | **Canais** (`app/js/catalog.js`) | 37 itens: TV aberta, notícias 24h, esportes, filmes/novelas grátis, infantil, educação, fé. Só fontes oficiais |

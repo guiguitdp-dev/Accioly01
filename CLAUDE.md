@@ -1,6 +1,6 @@
 # Accioly Play — guia rápido para agentes
 
-Produto: app de TV (web) com canais gratuitos OFICIAIS, atalhos para apps legais e 13 jogos no controle remoto, vendido por assinatura (teste grátis → R$ 15,99 fundador p/ 50 primeiros → preço normal).
+Produto: app de TV (web) com canais gratuitos OFICIAIS, atalhos para apps legais e 17 jogos no controle remoto, vendido por assinatura (teste grátis → R$ 15,99 fundador p/ 50 primeiros → preço normal).
 
 ## Mapa (leia só o que precisar)
 - `app/` app da TV (HTML/JS puro, sem build). `app/js/catalog.js` = canais. `app/js/games/*` = jogos. NÃO leia `app/vendor/`.

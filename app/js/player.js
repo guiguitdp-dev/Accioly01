@@ -31,6 +31,11 @@
     document.body.appendChild(el);
     state.el = el;
     state.off = Input.on(onAction);
+    // celular: tocar no vídeo mostra os botões
+    el.addEventListener('click', function (e) {
+      if (e.target.closest && e.target.closest('button')) return;
+      if (!osdVisible()) { showOsd(); var b = el.querySelector('.focusable'); if (b) Input.focus(b); }
+    });
     render();
   }
 

@@ -209,3 +209,21 @@ a { color: var(--accent2); }
 .tile .mono.sm { font-size: .72rem; letter-spacing: -.03em; }
 .tab { white-space: nowrap; flex: 0 0 auto; }
 @media (max-width: 700px) { .tabs { scrollbar-width: none; } .tabs::-webkit-scrollbar { display: none; } .tab { padding: .5rem .85rem; font-size: 1rem; } }
+
+/* ---------- Controle na tela (celular/tablet) ---------- */
+.tpad { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.tbtn { pointer-events: auto; position: absolute; border: 2px solid rgba(255,255,255,.35); background: rgba(255,255,255,.12); color: #fff;
+  font-size: 1.6rem; font-weight: 900; border-radius: 18px; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+.tbtn.on { background: rgba(255,255,255,.35); }
+.tdir { position: absolute; left: max(14px, env(safe-area-inset-left)); bottom: max(14px, env(safe-area-inset-bottom)); width: 186px; height: 186px; }
+.tdir .tbtn { width: 62px; height: 62px; }
+.tu { left: 62px; top: 0; } .td { left: 62px; bottom: 0; } .tl { left: 0; top: 62px; } .tr { right: 0; top: 62px; }
+.tact { position: absolute; right: max(18px, env(safe-area-inset-right)); bottom: max(26px, env(safe-area-inset-bottom)); width: 120px; height: 120px; }
+.ta { width: 104px; height: 104px; border-radius: 50%; right: 0; bottom: 0; background: rgba(255,90,90,.35); font-size: 2rem; }
+.tp { top: max(10px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); width: 54px; height: 54px; font-size: 1.3rem; }
+
+/* ---------- Celular (iPhone com notch, Android) ---------- */
+.topbar { padding-top: max(1.1rem, env(safe-area-inset-top)); padding-left: max(var(--safe), env(safe-area-inset-left)); padding-right: max(var(--safe), env(safe-area-inset-right)); }
+#root { padding-bottom: env(safe-area-inset-bottom); }
+.banner[data-act] { cursor: pointer; }
+html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
