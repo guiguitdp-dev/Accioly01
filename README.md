@@ -28,6 +28,11 @@ O link sempre aponta para a versão mais nova (atualiza sozinho a cada mudança 
 Abre com 2 cliques no computador, instala na Android TV/TV Box/celular (APK vitrine) e traz um **vídeo de demonstração** para Smart TVs. A pessoa usa **tudo liberado por 30 minutos** e depois vê o convite **"Gostou? Assine"** com QR Code do seu WhatsApp. Detalhes: [docs/INSTALAR-NA-TV.md](docs/INSTALAR-NA-TV.md).
 Vídeo para divulgar: **https://github.com/guiguitdp-dev/Accioly01/releases/download/app-latest/AcciolyPlay-Video.mp4**
 
+## 🌐 Abrir no navegador (qualquer computador, celular ou TV)
+
+**https://raw.githack.com/guiguitdp-dev/Accioly01/main/app/index.html** — sempre a versão mais nova, sem instalar nada (modo demonstração; o dono libera tudo em Conta → 🔑 Sou o dono).
+Endereço oficial (depois de ativar o Pages, abaixo): **https://guiguitdp-dev.github.io/Accioly01/**
+
 ## 🍎 iPhone e iPad
 
 O iPhone não instala APK. Use o app web (mesmo app, mesma tela):
