@@ -52,12 +52,13 @@
           : '<div class="audioview"><img id="aart" alt=""><div><div class="badge-free">🎧 MÚSICA LIVRE · SEM ANÚNCIOS</div><h1 id="atitle"></h1><p id="aartist"></p>' +
             '<div class="prog"><i id="aprog"></i></div><p class="note" id="atime">0:00</p></div><audio id="aud" preload="auto"></audio></div>') +
       '<div class="msg" id="mmsg"><div class="box"><div class="spinner"></div><div>Carregando…</div></div></div>' +
-      '<div class="osd" id="mosd"><div class="title" id="mtitle"></div><div class="sub" id="msub"></div>' +
+      '<div class="osd" id="mosd"><div class="title"><span id="mtitle"></span><span class="qbadge" id="mq" style="display:none"></span></div><div class="sub" id="msub"></div>' +
       '<div class="inline">' +
         '<button class="btn ghost focusable" data-m="back">◀ Voltar</button>' +
         '<button class="btn ghost focusable" data-m="prev">⏮ Anterior</button>' +
         '<button class="btn primary focusable" data-m="toggle" id="mtoggle">⏸ Pausar</button>' +
         '<button class="btn ghost focusable" data-m="next">⏭ Próxima</button>' +
+        '<button class="btn ghost focusable" data-m="opts">⚙️ Opções</button>' +
       '</div><div class="note" style="margin-top:.8rem">' + (yt ? 'Player oficial do YouTube (pode exibir anúncios do YouTube). ' : '') +
       '▲/▼ anterior/próxima · ◀/▶ 10 segundos · OK menu · VOLTAR sai</div></div>';
     st.el.querySelectorAll('[data-m]').forEach(function (b) { b.addEventListener('click', function () { act(b.getAttribute('data-m')); }); });
@@ -104,9 +105,10 @@
         if (st.ytp && st.ytp.loadVideoById) { st.ytp.loadVideoById(it.id); return; }
         st.ytp = new YT.Player('ytbox', {
           width: '100%', height: '100%', videoId: it.id,
-          playerVars: { autoplay: 1, controls: 0, rel: 0, playsinline: 1, modestbranding: 1, fs: 0, iv_load_policy: 3, origin: location.origin },
+          playerVars: { autoplay: 1, controls: 0, rel: 0, playsinline: 1, modestbranding: 1, fs: 0, iv_load_policy: 3, hl: 'pt', cc_lang_pref: 'pt', cc_load_policy: Prefs.get('legenda') === 'pt' ? 1 : 0, origin: location.origin },
           events: {
-            onReady: function (e) { e.target.playVideo(); },
+            onReady: function (e) { e.target.playVideo(); MediaOptions.applyFrame(st && st.el.querySelector('#ytbox'), true); if (Prefs.get('legenda') === 'pt') MediaOptions.captionsYT(e.target, true); },
+            onPlaybackQualityChange: function (e) { var q = st && st.el.querySelector('#mq'); if (q) { var t = MediaOptions.ytQualityLabel(e.data); q.textContent = t; q.style.display = t ? '' : 'none'; } },
             onStateChange: function (e) {
               if (e.data === YT.PlayerState.PLAYING) { errStreak = 0; msg(null); setToggle(true); }
               if (e.data === YT.PlayerState.PAUSED) setToggle(false);
@@ -149,6 +151,13 @@
     if (a === 'prev') return move(-1);
     if (a === 'next') return move(1);
     if (a === 'toggle') return toggle();
+    if (a === 'opts') {
+      clearTimeout(st.timer);
+      var yt = cur().kind === 'yt';
+      return OptionsSheet.open(st.el, yt ? 'Opções de vídeo' : 'Opções de música', MediaOptions.rows({
+        video: yt ? null : st.audio, audio: !yt, ytp: yt ? st.ytp : null, frameEl: st.el.querySelector('#ytbox'), iframe: true, live: !!cur().live
+      }), function () { if (st) { showOsd(); Input.focus(st.el.querySelector('[data-m=opts]')); } });
+    }
   }
 
   function showOsd(stay) {
@@ -184,6 +193,7 @@
   function close(silent) {
     if (!st) return;
     clearTimeout(st.timer);
+    if (window.OptionsSheet && OptionsSheet.isOpen()) OptionsSheet.close();
     if (st.ytp) { try { st.ytp.destroy(); } catch (e) {} }
     if (st.audio) { try { st.audio.pause(); st.audio.removeAttribute('src'); st.audio.load(); } catch (e) {} }
     if (st.off) st.off();
