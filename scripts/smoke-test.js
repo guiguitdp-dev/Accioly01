@@ -144,6 +144,10 @@ function ok(name, cond, extra) { results.push({ name, pass: !!cond, extra }); co
     await page.click('.tab[data-tab=inicio]');
     await page.waitForSelector('[data-row=hnews] .ntile');
     ok('tela inicial mostra "Últimas notícias"', (await page.locator('[data-row=hnews] .ntile').count()) >= 4);
+    ok('tela inicial tem Top 10 numerado e "Ao vivo agora"', (await page.locator('[data-row=top10] .rank').count()) === 10 && (await page.locator('[data-row=aovivo] .tile').count()) >= 5);
+    ok('jogos mostram a foto real do jogo', (await page.locator('[data-row=jalta] .tile img.cover[src^="img/jogos/"]').count()) >= 3);
+    const capasApi = await page.evaluate(() => fetch('/api/capas').then((r) => r.json()));
+    ok('servidor entrega capas reais dos canais', Object.keys(capasApi.items || {}).length >= 5);
     await page.click('.tab[data-tab=noticias]');
     await page.waitForSelector('#nrows .ntile');
     ok('aba Notícias tem seções Brasil, Mundo, Economia, Esportes...', (await page.locator('#nrows [data-row^=n_]').count()) >= 6);
