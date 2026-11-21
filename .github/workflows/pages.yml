@@ -2,6 +2,7 @@
 # "Compartilhar → Adicionar à Tela de Início". Também funciona em qualquer navegador.
 # Endereço: https://<dono>.github.io/<repo>/
 # 1ª vez: GitHub → Settings → Pages → Source: "GitHub Actions" (um clique).
+# Link direto: https://github.com/guiguitdp-dev/Accioly01/settings/pages
 name: Publicar app web (iPhone e navegador)
 
 on:
@@ -10,6 +11,9 @@ on:
     paths:
       - 'app/**'
       - '.github/workflows/pages.yml'
+  # De hora em hora: assim que o dono ativar o Pages, o site entra no ar sozinho (e fica sempre em dia)
+  schedule:
+    - cron: '41 * * * *'
   workflow_dispatch:
 
 permissions:
